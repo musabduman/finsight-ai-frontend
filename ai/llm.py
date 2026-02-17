@@ -104,61 +104,54 @@ class Gemini(BaseLLM):
 
 class OllamaLLM(BaseLLM):
     
-    def __init__(self,model="qwen3:4b"):
+    def __init__(self,model="gemma3:4b"):
         self.model=model
 
     @staticmethod
     def ollama_safe(text):
         if not isinstance(text, str):
             return text
-        return text.encode("ascii", "ignore").decode("utf-8")
+        return text
     
-    def build_prompt(self,df, haberler_listesi, ai_rapor, analiz_sonucu):
+    def build_prompt(self,df, ai_rapor, analiz_sonucu):
         son_veriler = df.tail(20).to_string()
         ai_rapor_safe = self.ollama_safe(ai_rapor)
         analiz_sonucu_safe = self.ollama_safe(analiz_sonucu)
         
-        return  self.ollama_safe(f"""GÖREVİN: Sen dünyanın en iyi hedge fonlarında çalışan bir denetleyicisin sana gelen metini elindeki veriler ile denetle.
-        AMACIN:
-        Metini yeniden YAZMA. Sadece rapordaki mantıksal hatalar ve eksik verileri tespit et. 
-
-        1. TEKNİK_VERİLER:
-        {son_veriler}
-
-        2. AI_SKORU:
-        {ai_rapor_safe}
-
-        3. GEMINI_RAPORU (Bunu denetliyorsun):
-        {analiz_sonucu_safe}
+        return  self.ollama_safe(f"""GÖREVİN: Sen acımasız, net ve duygusuz bir finansal denetçisin.
+        AMACIN: Aşagıdaki Gemini raporunu, teknik verilerle kıyaslayıp SADECE mantıksal hataları bulmak. Asla Gemini'nin raporunu baştan yazma veya özetleme!
 
         KURALLAR:
-        - Gemini'nin edebi diline karışma.
-        - Sadece sayılar ve teknik indikatörler (RSI, MACD, Bollinger) dogru yorumlanmış mı ona bak.
-        - Eger Gemini "Yükseliş" demiş ama RSI 90 ise (aşırı pahalı), bunu uyarı olarak ekle.
-        - Eger Gemini önemli bir veriyi (örn: Hacim patlamasını) atlamışsa, onu ekle.
+        1. Sadece sayısal tutarsızlıkları ara (Örn: RSI 80 ise ve Gemini 'ucuz' diyorsa bu bir hatadır).
+        2. Hiçbir hata yoksa SADECE VE SADECE '✅ Analiz tutarlı. Verilerle çelişen bir yoruma rastlanmadı.' yazıp bitir. Başka tek kelime etme.
+        3. Hata bulursan madde madde, kısa ve öz şekilde belirt.
 
-        ÇIKTI FORMATI (Sadece aşagıdakini yaz):
+        --- ÇIKTI FORMATI ÖRNEĞİ 1 (Hata Yoksa) ---
+        [🕵️ MANTIK DENETİMİ] 
+        ✅ Analiz tutarlı. Verilerle çelişen bir yoruma rastlanmadı.
 
-        [MANTIKÇI NOTLARI]
-        ✅ ONAYLANANLAR:
-        ⚠️ DÜZELTMELER:
-        ➕ EKLENENLER:
-        DENETLE:
-        1. TEKNIK VERILER:
+        --- ÇIKTI FORMATI ÖRNEĞİ 2 (Hata Varsa) ---
+        [🕵️ MANTIK DENETİMİ] 
+        ⚠️ Hatalar Tespit Edildi:
+        - Gemini MACD değerini pozitif yorumlamış ancak tabloda MACD -0.52 (Negatif).
+        - Hacim verisinde artış yokken Gemini hacim patlaması var demiş. Hatalı.
 
-        2. AI RAPOR:
+        GERÇEK TEKNİK VERİLER:
+        {son_veriler}
 
-        3. GEMINI RAPOR:
-
-        CIKTI:
-        [MANTIKCI NOTLARI]
-        """)
+        GEMINI'NİN YAZDIĞI RAPOR (Bunu denetliyorsun):
+        {analiz_sonucu_safe}""")
     
     def generate(self, prompt):
         try:
             response=ollama.chat(
                 model=self.model,
-                messages=[{"role":"user","content":prompt}]
+                messages=[{"role":"user","content":prompt}],
+                options={
+                    "temperature":0.1,
+                    "top_p":0.9,
+                    "num_predict":150
+                }
             )
             return response["message"]["content"]
         except Exception as e :

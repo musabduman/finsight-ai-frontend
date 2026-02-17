@@ -5,7 +5,7 @@ import pandas as pd
 import yfinance as yf
 from ddgs import DDGS
 
-from indicators.technical import teknik_analiz
+from indicators.technical import TechnicalAnalyzer
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, OllamaLLM
 
@@ -119,7 +119,7 @@ def mod_tekli_detayli(gemini_bot, ollama_bot, dl_bot):
     
     try:
         print(f"\n{sembol} için teknik ve temel veriler hesaplanıyor...")
-        df = teknik_analiz(df)
+        df = TechnicalAnalyzer(df)
         temel = temel_veriler(hisse)
         ai_rapor = muhasebeci(hisse, dl_bot)
         haberler_listesi = haber_verileri(sembol)
@@ -154,7 +154,7 @@ def mod_bist30_tarama(gemini_bot, ollama_bot, dl_bot):
             df = hisse.history(period="1y")
             if df.empty: continue
             
-            df = teknik_analiz(df)
+            df = TechnicalAnalyzer(df)
             durum, sinyal = sinyal_kontrol(df)
             
             if durum:
@@ -219,14 +219,22 @@ def mod_mega_tarama(dl_bot):
     for hisse, guven in yukselis_beklenenler:
         print(f"⭐ {hisse:<10} - Güven: %{guven}")
     print("="*40 + "\n")
- 
+
+class DummyOllama:
+    """Ollama kurulu değilse veya hata verirse programın çökmesini engelleyen gölge sınıf."""
+    def __call__(self, *args, **kwargs):
+        return "⚠️ Ollama motoru aktif değil. Yalnızca Gemini ve Deep Learning analizleri dikkate alınmıştır."
+    
 def main(): 
     gemini_apı_key=os.getenv("GEMINI_API_KEY","API_KEY_YOK")
-    
     gemini_yorumla=Gemini(api_key=gemini_apı_key)
-    ollama_yorumla=OllamaLLM(model="gwen3:4b")
     dl_bot=deeplearning()
-    
+    try:
+        ollama_yorumla=OllamaLLM(model="gwen3:4b")
+    except:
+        print("Ollama yapay zekasında bir sorun oldu veya şuan bilgisayarınızda kurulu değil\n Daha iyi bir deneyim için Ollamayı kurunuz!")
+        ollama_yorumla=DummyOllama()
+
     while True:
         print("\n" + "="*40)
         print("🤖 HİSSE ANALİZ YAPAY ZEKA ASİSTANI")

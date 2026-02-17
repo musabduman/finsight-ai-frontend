@@ -61,6 +61,6 @@ class TechnicalAnalyzer:
         
         return self.df.dropna()
     
-    def teknik_analiz(df):
-        analizor = TechnicalAnalyzer(df)
-        return analizor.teknik_baslat()
+def teknik_analiz(df):
+    analizor = TechnicalAnalyzer(df)
+    return analizor.teknik_baslat()

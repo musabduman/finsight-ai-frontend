@@ -59,6 +59,9 @@ class deeplearning:
         df['Gun'] = df.index.dayofweek
         df['Momentum'] = df['Close'] / df['Close'].shift(10)
 
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df = df.astype('float32')
+
         df['Target']=df['Close'].shift(-1)
         
         features = ['Close', 'RSI', 'MACD', 'Bollinger_Konum', 'Hacim_degisimi', 'Momentum']
@@ -98,6 +101,24 @@ class deeplearning:
         sonuc=self.model(son_gün_tensor)
         sonuc=y_scaler.inverse_transform(sonuc.detach().numpy())
 
-        return f"Yarınki fiyat tahmini {sonuc[0][0]:.2f}"
+        # --- ESKİ RETURN SATIRINI SİL VE BURAYI YAPIŞTIR ---
+        
+        tahmin_degeri = sonuc[0][0]
+        suanki_fiyat = df['Close'].iloc[-1]
+        
+        # Gelecekteki fiyat şu ankinden büyükse YÜKSELİŞ, değilse DÜŞÜŞ
+        yon = "YÜKSELİŞ" if tahmin_degeri > suanki_fiyat else "DÜŞÜŞ"
+        
+        # Tahminle şu anki fiyat arasındaki makasa göre basit bir AI güven skoru
+        fark_orani = abs(tahmin_degeri - suanki_fiyat) / suanki_fiyat
+        guven_skoru = min(99, int(60 + (fark_orani * 1000))) 
+
+        # main.py dosyasının beklediği SÖZLÜK (Dictionary) formatında cevap veriyoruz:
+        return {
+            "suanki_fiyat": round(float(suanki_fiyat), 2),
+            "tahmin": round(float(tahmin_degeri), 2),
+            "yön": yon,
+            "güven": guven_skoru
+        }
         
         
