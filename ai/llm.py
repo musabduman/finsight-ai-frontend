@@ -60,7 +60,7 @@ class Gemini(BaseLLM):
 
         📊 GELECEK SENARYOSU:
         (İki üç cümle ile ne bekliyorsun? Yükseliş/Düşüş/Yatay)
-        Karar mekanizmanda kullandıgın(MACD,SMA50,SMA200,VOLUME_SİGNAL,BOLLINGER,PİVOT,VOLATİLİTE,WİDTH) degerlerini burda satır satır göster ve yorumla !
+        Karar mekanizmanda kullandıgın(RSI,MACD,SMA50,SMA200,VOLUME_SİGNAL,BOLLINGER,PİVOT,VOLATİLİTE,WİDTH) degerlerini burda satır satır göster ve yorumla !
 
         🎯 HEDEF FİYAT:
         (R1 veya teknik analize göre net bir rakam ver)
@@ -115,7 +115,6 @@ class OllamaLLM(BaseLLM):
     
     def build_prompt(self,df, ai_rapor, analiz_sonucu):
         son_veriler = df.tail(20).to_string()
-        ai_rapor_safe = self.ollama_safe(ai_rapor)
         analiz_sonucu_safe = self.ollama_safe(analiz_sonucu)
         
         return  self.ollama_safe(f"""GÖREVİN: Sen acımasız, net ve duygusuz bir finansal denetçisin.

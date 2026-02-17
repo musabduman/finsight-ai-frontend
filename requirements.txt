@@ -1,6 +1,9 @@
-yfinance
-pandas
-google-genai
-duckduckgo-search
 numpy
-openpyxl
+pandas
+yfinance
+duckduckgo-search
+torch
+scikit-learn
+python-dotenv
+ollama
+google-genai

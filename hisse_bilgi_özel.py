@@ -1,11 +1,12 @@
 import sys
 import time
 import warnings
+import numpy as np
 import pandas as pd
 import yfinance as yf
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
-from indicators.technical import TechnicalAnalyzer
+from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, OllamaLLM
 
@@ -15,7 +16,7 @@ from dotenv import load_dotenv
 sys.stdout.reconfigure(encoding='utf-8')
 warnings.filterwarnings('ignore')
 
-GOOGLE_API_KEY="Buraya gemini apı keyinizi yazınız" 
+GOOGLE_API_KEY="Buraya apı key gelecek!!!" 
 
 pd.options.display.float_format = '{:.2f}'.format
 
@@ -107,6 +108,11 @@ def haber_verileri(sembol):
 def muhasebeci(hisse,bot=deeplearning): 
     try:
         df_muhasebeci = hisse.history(period="4y")
+        sayisal_sutunlar = ['Open', 'High', 'Low', 'Close', 'Volume']
+        df_muhasebeci=df_muhasebeci[sayisal_sutunlar]
+        df_muhasebeci.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df_muhasebeci.dropna(inplace=True)
+
         sonuc = bot.analiz_et(df_muhasebeci)
 
         return f"Yapay Zeka (Deep Learning) Modeli; {sonuc['suanki_fiyat']} TL olan güncel fiyatın, %{sonuc['güven']} güven skoruyla {sonuc['tahmin']} TL hedefine ulaşacağını ve ana yönün {sonuc['yön']} olacağını öngörüyor."
@@ -119,10 +125,10 @@ def mod_tekli_detayli(gemini_bot, ollama_bot, dl_bot):
     
     try:
         print(f"\n{sembol} için teknik ve temel veriler hesaplanıyor...")
-        df = TechnicalAnalyzer(df)
+        df = teknik_analiz(df)
         temel = temel_veriler(hisse)
         ai_rapor = muhasebeci(hisse, dl_bot)
-        haberler_listesi = haber_verileri(sembol)
+        haberler = haber_verileri(sembol)
         
         # Excel'e kaydetme işlemi
         df_export = df.drop(["Dividends", "Stock Splits", "Volume"], axis=1, errors="ignore")
@@ -132,8 +138,8 @@ def mod_tekli_detayli(gemini_bot, ollama_bot, dl_bot):
         print(f"Veriler {excel_isim} dosyasına kaydedildi.")
 
         print("\nYapay Zekalar Yorumluyor, lütfen bekleyin...\n")
-        analiz_sonucu = gemini_bot(temel, sembol, df, haberler_listesi, ai_rapor)
-        final_rapor = ollama_bot(temel, sembol, df, haberler_listesi, ai_rapor, analiz_sonucu, model="qwen3:4b")
+        analiz_sonucu = gemini_bot(sembol, temel, df, haberler, ai_rapor)
+        final_rapor = ollama_bot(df, ai_rapor, analiz_sonucu)
         
         print("="*60)
         print(f"BÜYÜK RESİM (OLLAMA + GEMİNİ): \n{final_rapor}")
@@ -147,14 +153,13 @@ def mod_bist30_tarama(gemini_bot, ollama_bot, dl_bot):
     """MOD 2: BIST30 içinde fırsat veren hisseleri tarar."""
     print("\nBIST 30 Taraması Başlıyor...")
     firsat_listesi = []
-    
     for sembol in BIST30_LISTESI:
         try:
             hisse = yf.Ticker(sembol)
             df = hisse.history(period="1y")
             if df.empty: continue
             
-            df = TechnicalAnalyzer(df)
+            df = teknik_analiz(df)
             durum, sinyal = sinyal_kontrol(df)
             
             if durum:
@@ -177,8 +182,8 @@ def mod_bist30_tarama(gemini_bot, ollama_bot, dl_bot):
         haberler = haber_verileri(sembol)
         ai_rapor = muhasebeci(hisse, dl_bot)
         
-        analiz_sonucu = gemini_bot(temel, sembol, df, haberler, ai_rapor)
-        final_rapor = ollama_bot(temel, sembol, df, haberler, ai_rapor, analiz_sonucu, model="qwen3:4b")
+        analiz_sonucu = gemini_bot(sembol, temel, df, haberler, ai_rapor)
+        final_rapor = ollama_bot(df, ai_rapor, analiz_sonucu)
         
         print(50*'*')
         print(final_rapor)
@@ -226,11 +231,10 @@ class DummyOllama:
         return "⚠️ Ollama motoru aktif değil. Yalnızca Gemini ve Deep Learning analizleri dikkate alınmıştır."
     
 def main(): 
-    gemini_apı_key=os.getenv("GEMINI_API_KEY","API_KEY_YOK")
-    gemini_yorumla=Gemini(api_key=gemini_apı_key)
+    gemini_yorumla=Gemini(api_key=GOOGLE_API_KEY)
     dl_bot=deeplearning()
     try:
-        ollama_yorumla=OllamaLLM(model="gwen3:4b")
+        ollama_yorumla=OllamaLLM(model="gemma3:4b")
     except:
         print("Ollama yapay zekasında bir sorun oldu veya şuan bilgisayarınızda kurulu değil\n Daha iyi bir deneyim için Ollamayı kurunuz!")
         ollama_yorumla=DummyOllama()
