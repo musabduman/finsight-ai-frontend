@@ -1,5 +1,6 @@
 from google import genai
 import ollama
+import time
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -87,20 +88,22 @@ class Gemini(BaseLLM):
         """
     
     def generate(self, prompt):
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config={
-                    "temperature":0.7,
-                    "top_p":0.95,
-                    "max_output_tokens":4096
-                }
-            )
-            return response.text
-        except Exception as e:
-            return f"Hata {e}"
-        
+        max_deneme=3
+        for i in range(max_deneme):    
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config={
+                        "temperature":0.7,
+                        "top_p":0.95,
+                        "max_output_tokens":4096
+                    }
+                )
+                return response.text
+            except Exception as e:
+                print(f"Gemini apı kullanımı hakkında bir sorun oldu 5 saniye sonra tekrar denencek. sabrınız için teşekkürler :)")
+                time.sleep(5)
 
 class OllamaLLM(BaseLLM):
     
@@ -113,33 +116,37 @@ class OllamaLLM(BaseLLM):
             return text
         return text
     
-    def build_prompt(self,df, ai_rapor, analiz_sonucu):
-        son_veriler = df.tail(20).to_string()
-        analiz_sonucu_safe = self.ollama_safe(analiz_sonucu)
+    def build_prompt(self,df,analiz_sonucu):
+
+        son_veri = df.iloc[-1]
+        teknik_ozet = f"""
+        RSI: {son_veri.get('RSI', 'Yok')}
+        MACD_Signal: {son_veri.get('MACD_signal', 'Yok')} (1=Pozitif, -1=Negatif)
+        Fiyat: {son_veri.get('Close', 0)}
+        SMA200: {son_veri.get('SMA_200', 0)}
+        """
         
-        return  self.ollama_safe(f"""GÖREVİN: Sen acımasız, net ve duygusuz bir finansal denetçisin.
-        AMACIN: Aşagıdaki Gemini raporunu, teknik verilerle kıyaslayıp SADECE mantıksal hataları bulmak. Asla Gemini'nin raporunu baştan yazma veya özetleme!
+        analiz_sonucu_safe = self.ollama_safe(analiz_sonucu)
 
-        KURALLAR:
-        1. Sadece sayısal tutarsızlıkları ara (Örn: RSI 80 ise ve Gemini 'ucuz' diyorsa bu bir hatadır).
-        2. Hiçbir hata yoksa SADECE VE SADECE '✅ Analiz tutarlı. Verilerle çelişen bir yoruma rastlanmadı.' yazıp bitir. Başka tek kelime etme.
-        3. Hata bulursan madde madde, kısa ve öz şekilde belirt.
-
-        --- ÇIKTI FORMATI ÖRNEĞİ 1 (Hata Yoksa) ---
-        [🕵️ MANTIK DENETİMİ] 
-        ✅ Analiz tutarlı. Verilerle çelişen bir yoruma rastlanmadı.
-
-        --- ÇIKTI FORMATI ÖRNEĞİ 2 (Hata Varsa) ---
-        [🕵️ MANTIK DENETİMİ] 
-        ⚠️ Hatalar Tespit Edildi:
-        - Gemini MACD değerini pozitif yorumlamış ancak tabloda MACD -0.52 (Negatif).
-        - Hacim verisinde artış yokken Gemini hacim patlaması var demiş. Hatalı.
+        # --- GÜNCELLENMİŞ OLLAMA PROMPTU ---
+        return f"""SEN BİR DENETÇİSİN (AUDITOR).
+        GÖREVİN: Aşağıdaki 'Gemini Raporu'nu, 'Gerçek Teknik Veriler' ile karşılaştırıp YALAN SÖYLÜYOR MU kontrol etmek.
 
         GERÇEK TEKNİK VERİLER:
-        {son_veriler}
+        {teknik_ozet}
 
-        GEMINI'NİN YAZDIĞI RAPOR (Bunu denetliyorsun):
-        {analiz_sonucu_safe}""")
+        GEMINI RAPORU:
+        {analiz_sonucu_safe}
+
+        KURALLAR:
+        1. Eğer RSI 70'in üzerindeyse ve Gemini "Ucuz" diyorsa -> BU BİR HATADIR.
+        2. Eğer MACD Sinyali -1 (Negatif) ise ve Gemini "Yükseliş trendi" diyorsa -> BU BİR HATADIR.
+        3. Eğer Fiyat, SMA200'ün altındaysa ve Gemini "Boğa piyasası" diyorsa -> BU BİR HATADIR.
+
+        CEVAP FORMATI:
+        - Hata yoksa SADECE şunu yaz: "✅ Analiz Onaylandı."
+        - Hata varsa: "⚠️ HATA TESPİT EDİLDİ: [Hatanın nedeni]"
+        """
     
     def generate(self, prompt):
         try:
