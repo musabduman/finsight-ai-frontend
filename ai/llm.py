@@ -24,11 +24,10 @@ class Gemini(BaseLLM):
         temel_metin = "\n".join([f"- {k}: {v}" for k, v in temel.items()]) if temel else "Temel veri bulunamadı."
         haberler_metni="\n".join(haberler_listesi) if haberler_listesi else "Haber verisi bulunamadı."
         
+        #ÖNEMLİ: Yaptıgın son yorumda "Neden?" sorusuna cevap ver. Terimlere bogmadan, çokta uzatmadan, sonucun hangi veriden kaynaklandıgını açıkla. (Örn: "RSI 30'un altında oldugu için ucuz dedim" gibi).
         return f"""Sen dünyanın en iyi hedge fonlarında çalışan bir borsa uzmanısın. 
         Sen karşındaki kişinin yatırım asistanısın; samimi, abartısız ve net bir dil kullanabilirsin (arkadaşça ama profesyonel). Sakın yatırım tavsiyesi verme sadece elindeki bilgileri yorumla !
-
-        ÖNEMLİ: Yaptıgın son yorumda "Neden?" sorusuna cevap ver. Terimlere bogmadan, çokta uzatmadan, sonucun hangi veriden kaynaklandıgını açıkla. (Örn: "RSI 30'un altında oldugu için ucuz dedim" gibi).
-
+    
         ELİNDEKİ VERİLER {sembol} İÇİN:
 
         1. TEMEL ANALİZ:
@@ -95,9 +94,9 @@ class Gemini(BaseLLM):
                     model=self.model,
                     contents=prompt,
                     config={
-                        "temperature":0.7,
+                        "temperature":0.4,
                         "top_p":0.95,
-                        "max_output_tokens":4096
+                        "max_output_tokens":2048
                     }
                 )
                 return response.text
