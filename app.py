@@ -3,7 +3,7 @@ import yfinance as yf
 import time
 import os
 import streamlit as st
-
+import google_apı
 from ddgs import DDGS
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
@@ -11,7 +11,7 @@ from ai.llm import Gemini, OllamaLLM
 
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
 
-GOOGLE_API_KEY= "AIzaSyBUqEdgpxuvePLAD2fl2t9J7Vtc8I4Lmws"
+GOOGLE_API_KEY=google_apı.my_secret_key 
 
 st.sidebar.title("🤖 Kontrol Paneli")
 secim = st.sidebar.radio("Mod Seçiniz", ["Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
@@ -55,6 +55,13 @@ def haber_cek_web(symbol):
 st.title("🚀 Borsa İstanbul Yapay Zeka Analisti")
 st.markdown("---")
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔑 API Ayarları")
+# Kullanıcıdan API anahtarını şifreli (yıldızlı) şekilde alıyoruz
+kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.")
+
+if not kullanici_api_key:
+    st.sidebar.warning("Sistemi kullanmak için API Key giriniz.")
 if secim== "Tek Hisse Analizi":
     col1,col2=st.columns([3,1])
     with col1:
@@ -76,7 +83,7 @@ if secim== "Tek Hisse Analizi":
                 df=teknik_analiz(df)
 
                 dl_bot=deeplearning()
-                gemini_bot=Gemini(api_key=GOOGLE_API_KEY)
+                gemini_bot=Gemini(api_key=kullanici_api_key)
 
                 try:
                     ollama_bot=OllamaLLM(model="gemma3:4b")
