@@ -125,14 +125,8 @@ if secim== "Tek Hisse Analizi":
                 st.subheader(f"📊 {sembol} Analiz Paneli")
                 # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
                 # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
-                fig, ax = plt.subplots(figsize=(10,4))
-                ax.plot(df_temiz.index, df_temiz['Close'])
-                ax.set_title(f"{sembol} Fiyat Grafiği")
-                ax.set_xlabel("Tarih")
-                ax.set_ylabel("Fiyat (₺)")
-                ax.grid(alpha=0.3)
-
-                st.pyplot(fig)
+                grafik_listesi = df_temiz['Close'].tolist() 
+                st.line_chart(grafik_listesi)
 
                 # --- METRİKLER (NaN Korumalı) ---
                 son_fiyat = float(df_temiz['Close'].iloc[-1])
@@ -154,7 +148,7 @@ if secim== "Tek Hisse Analizi":
                     else:
                         st.success(denetleme)
                 with tab3:
-                    st.write(df.tail(10))
+                    st.dataframe(df.tail(10))
 
 elif secim == "Mega Tarama":
     st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
