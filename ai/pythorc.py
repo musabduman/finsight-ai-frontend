@@ -1,10 +1,13 @@
+import math
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-import numpy as np
 import warnings
+
+import numpy as np
+import torch.nn as nn
+import pandas as pd
+import torch.optim as optim
+
+from sklearn.preprocessing import MinMaxScaler
 
 warnings.filterwarnings("ignore")
 
@@ -112,7 +115,14 @@ class deeplearning:
         # Tahminle şu anki fiyat arasındaki makasa göre basit bir AI güven skoru
         fark_orani = abs(tahmin_degeri - suanki_fiyat) / suanki_fiyat
         guven_skoru = min(99, int(60 + (fark_orani * 1000))) 
-
+        # 🛡️ 1. NAN KORUMASI: Hedef fiyat NaN gelirse 0.0 yap
+        if pd.isna(tahmin_degeri) or math.isnan(tahmin_degeri):
+            tahmin_degeri = 0.0
+            yon = "Veri Yetersiz"
+            
+        # 🛡️ 2. NAN KORUMASI: Güven oranı NaN gelirse 0.0 yap
+        if pd.isna(guven_skoru) or math.isnan(guven_skoru):
+            guven_skoru = 0.0
         # main.py dosyasının beklediği SÖZLÜK (Dictionary) formatında cevap veriyoruz:
         return {
             "suanki_fiyat": round(float(suanki_fiyat), 2),

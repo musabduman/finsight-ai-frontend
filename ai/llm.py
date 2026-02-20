@@ -1,5 +1,5 @@
 from google import genai
-import ollama
+from groq import Groq
 import time
 
 class BaseLLM:
@@ -96,7 +96,7 @@ class Gemini(BaseLLM):
                     config={
                         "temperature":0.4,
                         "top_p":0.95,
-                        "max_output_tokens":2048
+                        "max_output_tokens":4096
                     }
                 )
                 return response.text
@@ -104,13 +104,13 @@ class Gemini(BaseLLM):
                 print(f"Gemini apı kullanımı hakkında bir sorun oldu 5 saniye sonra tekrar denencek. sabrınız için teşekkürler :)")
                 time.sleep(5)
 
-class OllamaLLM(BaseLLM):
+class GroqDenetci(BaseLLM):
     
-    def __init__(self,model="gemma3:4b"):
+    def __init__(self,api_key,model="llama-3.1-8b-instant"):
         self.model=model
-
+        self.client=Groq(api_key=api_key)
     @staticmethod
-    def ollama_safe(text):
+    def groq_safe(text):
         if not isinstance(text, str):
             return text
         return text
@@ -125,9 +125,9 @@ class OllamaLLM(BaseLLM):
         SMA200: {son_veri.get('SMA_200', 0)}
         """
         
-        analiz_sonucu_safe = self.ollama_safe(analiz_sonucu)
+        analiz_sonucu_safe = self.groq_safe(analiz_sonucu)
 
-        # --- GÜNCELLENMİŞ OLLAMA PROMPTU ---
+        # --- GÜNCELLENMİŞ GROQ PROMPTU ---
         return f"""SEN BİR DENETÇİSİN (AUDITOR).
         GÖREVİN: Aşağıdaki 'Gemini Raporu'nu, 'Gerçek Teknik Veriler' ile karşılaştırıp YALAN SÖYLÜYOR MU kontrol etmek.
 
@@ -141,23 +141,21 @@ class OllamaLLM(BaseLLM):
         1. Eğer RSI 70'in üzerindeyse ve Gemini "Ucuz" diyorsa -> BU BİR HATADIR.
         2. Eğer MACD Sinyali -1 (Negatif) ise ve Gemini "Yükseliş trendi" diyorsa -> BU BİR HATADIR.
         3. Eğer Fiyat, SMA200'ün altındaysa ve Gemini "Boğa piyasası" diyorsa -> BU BİR HATADIR.
-
-        CEVAP FORMATI:
-        - Hata yoksa SADECE şunu yaz: "✅ Analiz Onaylandı."
-        - Hata varsa: "⚠️ HATA TESPİT EDİLDİ: [Hatanın nedeni]"
+        4. SAYILARIN KÜSÜRATLARINA KARIŞMA ONLARI KISATABİLİR GEMİNİ. SAYININ KÜSÜRLERİNİ HATA SAYMA.
+        
+        CEVAP FORMATI (BU KURALLARA KESİNLİKLE UY):
+        - Eğer hata yoksa KESİNLİKLE açıklama yapma, madde madde sayma, özet geçme veya süreçten bahsetme. SADECE tek bir satır halinde şunu yaz: "✅ Analiz Onaylandı."
+        - Eğer hata varsa SADECE hatanın ne olduğunu tek bir cümleyle yaz: "⚠️ HATA TESPİT EDİLDİ: [Neden]"
+        
+        UNUTMA: Gevezelik etme, boş konuşma, sadece net sonucu ver!
         """
     
     def generate(self, prompt):
         try:
-            response=ollama.chat(
+            chat_completion = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
                 model=self.model,
-                messages=[{"role":"user","content":prompt}],
-                options={
-                    "temperature":0.1,
-                    "top_p":0.9,
-                    "num_predict":150
-                }
             )
-            return response["message"]["content"]
-        except Exception as e :
-            return f"Ollama hata {e}"
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            return f"⚠️ Denetçi Bağlantı Hatası: {e}"

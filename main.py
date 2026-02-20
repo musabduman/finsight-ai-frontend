@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 sys.stdout.reconfigure(encoding='utf-8')
 warnings.filterwarnings('ignore')
 
-GOOGLE_API_KEY="AIzaSyBUqEdgpxuvePLAD2fl2t9J7Vtc8I4Lmws" 
+GOOGLE_API_KEY="BURAYA API KEY GELECEK" 
 
 pd.options.display.float_format = '{:.2f}'.format
 
