@@ -2,6 +2,7 @@ import pandas as pd
 import yfinance as yf
 import time
 import streamlit as st
+import matplotlib.pyplot as plt
 
 from duckduckgo_search import DDGS
 from indicators.technical import teknik_analiz
@@ -124,8 +125,14 @@ if secim== "Tek Hisse Analizi":
                 st.subheader(f"📊 {sembol} Analiz Paneli")
                 # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
                 # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
-                grafik_listesi = df_temiz['Close'].tolist() 
-                st.line_chart(grafik_listesi)
+                fig, ax = plt.subplots(figsize=(10,4))
+                ax.plot(df_temiz.index, df_temiz['Close'])
+                ax.set_title(f"{sembol} Fiyat Grafiği")
+                ax.set_xlabel("Tarih")
+                ax.set_ylabel("Fiyat (₺)")
+                ax.grid(alpha=0.3)
+
+                st.pyplot(fig)
 
                 # --- METRİKLER (NaN Korumalı) ---
                 son_fiyat = float(df_temiz['Close'].iloc[-1])
