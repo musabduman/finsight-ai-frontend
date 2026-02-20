@@ -115,17 +115,29 @@ if secim== "Tek Hisse Analizi":
                 time.sleep(0.5)
                 my_bar.empty()
 
-                st.subheader(f"📊 {sembol} Analiz Paneli")
+                # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
+                # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
+                df_temiz = df.copy()
+                df_temiz = df_temiz.ffill().bfill().fillna(0) # NaN'ları doldur
 
+                # --- GRAFİK KISMI ---
+                st.subheader(f"📊 {sembol} Analiz Paneli")
+                # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
+                # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
+                grafik_listesi = df_temiz['Close'].tolist() 
+                st.line_chart(grafik_listesi)
+
+                # --- METRİKLER (NaN Korumalı) ---
+                son_fiyat = float(df_temiz['Close'].iloc[-1])
+                rsi_deger = float(df_temiz['RSI'].iloc[-1])
+                                
                 c1,c2,c3,c4=st.columns(4)
                 son_fiyat=df['Close'].iloc[-1]
                 c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
                 c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
                 c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                 c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
-                
-                st.line_chart(df['Close'].values)
-
+            
                 tab1,tab2,tab3=st.tabs(["📄 Gemini Raporu", "🛡️ Groq Denetimi", "🧮 Veri Tablosu"])
                 with tab1:
                     st.markdown(analiz_sonucu)
