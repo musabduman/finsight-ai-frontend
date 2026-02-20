@@ -1,0 +1,6 @@
+[fastReruns]
+enabled = true
+
+[dataFrameSerialization]
+# Bu satır LargeUtf8 hatasını engeller
+fast = "legacy"
