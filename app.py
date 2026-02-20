@@ -154,7 +154,7 @@ if secim== "Tek Hisse Analizi":
                     else:
                         st.success(denetleme)
                 with tab3:
-                    st.dataframe(df.tail(10))
+                    st.write(df.tail(10))
 
 elif secim == "Mega Tarama":
     st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
