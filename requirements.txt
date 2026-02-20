@@ -9,5 +9,5 @@ google-genai
 streamlit
 groq
 altair<5
-pyarrow>=14.0.1
+pyarrow==14.0.1
 matplotlib
