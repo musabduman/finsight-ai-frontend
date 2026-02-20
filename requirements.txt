@@ -9,4 +9,4 @@ google-genai
 streamlit
 groq
 altair<5
-pyarrow
+pyarrow>=14.0.1
