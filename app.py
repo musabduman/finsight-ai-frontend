@@ -3,7 +3,7 @@ import yfinance as yf
 import time
 import streamlit as st
 
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, GroqDenetci
