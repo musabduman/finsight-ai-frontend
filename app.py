@@ -123,9 +123,8 @@ if secim== "Tek Hisse Analizi":
                 c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
                 c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                 c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
-                grafik_verisi = df['Close'].copy()
-                grafik_verisi.index = grafik_verisi.index.strftime('%Y-%m-%d')
-                st.line_chart(grafik_verisi)
+                
+                st.line_chart(df['Close'].values)
 
                 tab1,tab2,tab3=st.tabs(["📄 Gemini Raporu", "🛡️ Groq Denetimi", "🧮 Veri Tablosu"])
                 with tab1:
