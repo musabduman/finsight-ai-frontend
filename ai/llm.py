@@ -115,9 +115,10 @@ class Gemini(BaseLLM):
                 )
                 return response.text
             except Exception as e:
-                print(f"Gemini apı kullanımı hakkında bir sorun oldu 5 saniye sonra tekrar denencek. sabrınız için teşekkürler :)")
+                print(f"Gemini apı kullanımı hakkında bir sorun oldu 5 saniye sonra tekrar denencek. sabrınız için teşekkürler :) {e}")
                 time.sleep(5)
-
+        
+        return "⚠️ Gemini API'ye şu an ulaşılamıyor. Lütfen internet bağlantınızı veya API limitinizi (Quota) kontrol edin."
 class GroqDenetci(BaseLLM):
     
     def __init__(self,api_key,model="llama-3.1-8b-instant"):
@@ -157,7 +158,7 @@ class GroqDenetci(BaseLLM):
         Asla açıklama yapma, kibar olma, gevezelik etme!
         """
         user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
-        return gemini_prompt ,user_content
+        return f"{gemini_prompt}\n\n{user_content}"
     
     def generate(self, prompt):
         try:
