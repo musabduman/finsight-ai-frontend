@@ -59,8 +59,6 @@ st.sidebar.subheader("🔑 API Ayarları")
 kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.", key="gemini_hafıza")
 groq_api_key = st.sidebar.text_input("Groq API Key (Denetçi)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
 
-
-
 if not kullanici_api_key:
     st.sidebar.warning("⚠️ Gemini API Key eksik!")
 else:
