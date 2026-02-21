@@ -59,8 +59,7 @@ st.sidebar.subheader("🔑 API Ayarları")
 kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.", key="gemini_hafıza")
 groq_api_key = st.sidebar.text_input("Groq API Key (Denetçi)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
 
-sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
-analiz_button=st.button("Analizi Başlat", type="primary")
+
 
 if not kullanici_api_key:
     st.sidebar.warning("⚠️ Gemini API Key eksik!")
@@ -71,6 +70,9 @@ if not groq_api_key:
     st.sidebar.warning("ℹ️ Groq anahtarı yok: Denetçi modu pasif.")
 
 if secim== "Tek Hisse Analizi":
+    sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
+    analiz_button=st.button("Analizi Başlat", type="primary")
+    
     col1,col2=st.columns([3,1])
 
     with col1:    
