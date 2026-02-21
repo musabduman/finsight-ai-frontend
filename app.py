@@ -81,6 +81,8 @@ if secim== "Tek Hisse Analizi":
                     st.warning("Lütfen bir Hisse ismi girin!")
                 elif not kullanici_api_key:
                     st.error("Analiz için önce Gemini API anahtarını girmelisiniz!")
+            elif not kullanici_api_key: # <-- BURASI KRİTİK: Anahtar yoksa içeri sokma!
+                st.error("Analiz için önce Gemini API anahtarını girmelisiniz!")
             else:
                 progress_text="Yapay zekalar göreve çağrılıyor..."
                 my_bar=st.progress(0, text=progress_text)
