@@ -141,8 +141,6 @@ class GroqDenetci(BaseLLM):
         SMA200: {son_veri.get('SMA_200', 0)}
         """
         
-        analiz_sonucu_safe = self.groq_safe(analiz_sonucu)
-
         # --- GÜNCELLENMİŞ GROQ PROMPTU ---
         gemini_prompt= f"""SEN SERT BİR BORSA DENETÇİSİSİN. 
         Görevin Gemini raporundaki mantık hatalarını ve akademik çelişkileri bulmaktır.
