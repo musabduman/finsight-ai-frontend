@@ -59,100 +59,115 @@ st.sidebar.subheader("🔑 API Ayarları")
 kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.", key="gemini_hafıza")
 groq_api_key = st.sidebar.text_input("Groq API Key (Denetçi)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
 
-if not kullanici_api_key or not groq_api_key:
-    st.sidebar.warning("Sistemi kullanmak için her iki API Key'i de giriniz.")
-    st.stop() # Anahtarlar yoksa kod aşağıya inmez
+sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
+analiz_button=st.button("Analizi Başlat", type="primary")
+
+if not kullanici_api_key:
+    st.sidebar.warning("⚠️ Gemini API Key eksik!")
+else:
+    st.sidebar.success("✅ Gemini Hazır")
+
+if not groq_api_key:
+    st.sidebar.warning("ℹ️ Groq anahtarı yok: Denetçi modu pasif.")
 
 if secim== "Tek Hisse Analizi":
     col1,col2=st.columns([3,1])
 
-    with col1:
-        sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
-    
-    if st.button("Analizi Başlat", type="primary"):
-
-        if not sembol_input:
-            st.warning("Lütfen bir Hisse ismi girin!")
-        else:
-            progress_text="Yapay zekalar göreve çağrılıyor..."
-            my_bar=st.progress(0, text=progress_text)
-
-            hisse, sembol, df= get_stock_data(sembol_input)
-
-            if df is None or df.empty:
-                st.error("Hisse bulunamadı ya da veri çekilemedi!")
+    with col1:    
+        if analiz_button:
+            if not sembol_input:
+                st.warning("Lütfen bir Hisse ismi girin!")
+                if not sembol_input:
+                    st.warning("Lütfen bir Hisse ismi girin!")
+                elif not kullanici_api_key:
+                    st.error("Analiz için önce Gemini API anahtarını girmelisiniz!")
             else:
-                my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
-                df=teknik_analiz(df)
+                progress_text="Yapay zekalar göreve çağrılıyor..."
+                my_bar=st.progress(0, text=progress_text)
 
-                dl_bot=deeplearning()
-                gemini_bot=Gemini(api_key=kullanici_api_key)
+                hisse, sembol, df= get_stock_data(sembol_input)
 
-                try:
-                    groq_bot=GroqDenetci(api_key=groq_api_key,model="llama-3.1-8b-instant")
-                except Exception as e:
-                    st.error(f"Groq'a ulaşılamadı! {e}")
-                    st.stop()
-                
-                my_bar.progress(50, text="Pythorc sayısal tahmin yapıyor...")
-                df_muhasebeci=df[['Open','High','Low','Close','Volume']].dropna()
-                sonuc_dl=dl_bot.analiz_et(df_muhasebeci)
-                ai_rapor=f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']} TL, güven: %{sonuc_dl['güven']}"
-                my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
+                if df is None or df.empty:
+                    st.error("Hisse bulunamadı ya da veri çekilemedi!")
+                else:
+                    my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
+                    df=teknik_analiz(df)
 
-                info=hisse.info
-                temel={
-                    "FK": info.get('trailingPE', 'Yok'),
-                    "PD/DD": info.get('priceToBook', 'Yok'),
-                    "Sektor": info.get('sector', 'Bilinmiyor')
-                }
+                    dl_bot=deeplearning()
+                    gemini_bot=Gemini(api_key=kullanici_api_key)
+                    
+                    df_muhasebeci=df[['Open','High','Low','Close','Volume']].dropna()
+                    sonuc_dl=dl_bot.analiz_et(df_muhasebeci)
+                    ai_rapor=f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']} TL, güven: %{sonuc_dl['güven']}"
+                    my_bar.progress(50, text="Pythorc sayısal tahmin yapıyor...")
+                    haberler_listesi=haber_cek_web(sembol)
 
-                haberler_listesi=haber_cek_web(sembol)
-                analiz_sonucu=gemini_bot(sembol,temel,df,haberler_listesi,ai_rapor)
+                    info=hisse.info
+                    temel={
+                        "FK": info.get('trailingPE', 'Yok'),
+                        "PD/DD": info.get('priceToBook', 'Yok'),
+                        "Sektor": info.get('sector', 'Bilinmiyor')
+                    }    
+                    analiz_sonucu=gemini_bot(sembol,temel,df,haberler_listesi,ai_rapor)
+                    my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
 
-                denetleme=groq_bot(df,analiz_sonucu)
-
-                my_bar.progress(100, text="Yorum Tamamlandı!")
-                time.sleep(0.5)
-                my_bar.empty()
-
-                # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
-                # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
-                df_temiz = df.copy()
-                df_temiz = df_temiz.ffill().bfill().fillna(0) # NaN'ları doldur
-
-                # --- GRAFİK KISMI ---
-                st.subheader(f"📊 {sembol} Analiz Paneli")
-                # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
-                # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
-                grafik_listesi = df_temiz['Close'].tolist() 
-                st.line_chart(grafik_listesi)
-
-                # --- METRİKLER (NaN Korumalı) ---
-                son_fiyat = float(df_temiz['Close'].iloc[-1])
-                rsi_deger = float(df_temiz['RSI'].iloc[-1])
-                                
-                c1,c2,c3,c4=st.columns(4)
-                son_fiyat=df['Close'].iloc[-1]
-                c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
-                c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
-                c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
-                c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
-            
-                tab1,tab2,tab3=st.tabs(["📄 Gemini Raporu", "🛡️ Groq Denetimi", "🧮 Veri Tablosu"])
-                with tab1:
-                    st.markdown(analiz_sonucu)
-                with tab2:
-                    if "HATA" in denetleme or "⚠️" in denetleme:
-                        st.error(denetleme)
+                    if groq_api_key:
+                        try:
+                            my_bar.progress(90, text="Groq analizi denetliyor...")
+                            groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
+                            denetleme = groq_bot(df, analiz_sonucu)
+                            st.subheader("🤖 Yapay Zeka Konsensüsü")
+                            st.write(denetleme)
+                        
+                        except Exception as e:
+                            st.warning(f"Groq denetimi başarısız oldu, sadece Gemini raporu gösteriliyor.{e}")
+                            st.write(analiz_sonucu)
                     else:
-                        st.success(denetleme)
-                with tab3:
-                    st.dataframe(df.tail(10))
+                        # Groq yoksa direkt Gemini sonucunu bas
+                        st.subheader("📝 Analiz Raporu")
+                        st.write(analiz_sonucu)
+
+                    my_bar.progress(100, text="Yorum Tamamlandı!")
+                    time.sleep(0.5)
+                    my_bar.empty()
+
+                    # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
+                    # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
+                    df_temiz = df.copy()
+                    df_temiz = df_temiz.ffill().bfill().fillna(0) # NaN'ları doldur
+
+                    # --- GRAFİK KISMI ---
+                    st.subheader(f"📊 {sembol} Analiz Paneli")
+                    # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
+                    # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
+                    grafik_listesi = df_temiz['Close'].tolist() 
+                    st.line_chart(grafik_listesi)
+
+                    # --- METRİKLER (NaN Korumalı) ---
+                    son_fiyat = float(df_temiz['Close'].iloc[-1])
+                    rsi_deger = float(df_temiz['RSI'].iloc[-1])
+                                    
+                    c1,c2,c3,c4=st.columns(4)
+                    son_fiyat=df['Close'].iloc[-1]
+                    c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
+                    c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
+                    c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
+                    c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
+                
+                    tab1,tab2,tab3=st.tabs(["📄 Gemini Raporu", "🛡️ Groq Denetimi", "🧮 Veri Tablosu"])
+                    with tab1:
+                        st.markdown(analiz_sonucu)
+                    with tab2:
+                        if "HATA" in denetleme or "⚠️" in denetleme:
+                            st.error(denetleme)
+                        else:
+                            st.success(denetleme)
+                    with tab3:
+                        st.dataframe(df.tail(10))
 
 elif secim == "Mega Tarama":
     st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
-    st.markdown("Bu modül, BIST30 hisselerinin teknik göstergelerini ve PyTorch tahminlerini hesaplayarak fırsatları listeler.")
+    st.markdown("Bu modül, BIST100 hisselerinin teknik göstergelerini ve PyTorch tahminlerini hesaplayarak fırsatları listeler.")
 
     # Güncel BIST100 Hisseleri (Gerektiğinde güncelleyebilirsiniz)
     bist100_hisseler = [
