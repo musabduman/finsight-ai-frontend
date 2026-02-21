@@ -16,6 +16,17 @@ class Gemini(BaseLLM):
     def __init__(self,api_key,model="models/gemini-flash-latest"):
         self.client=genai.Client(api_key=api_key)
         self.model=model
+        
+        self.akademik_referans = """
+        REFERANS ÇALIŞMA: BİST 100 Endeksinin Spektral Analiz Yöntemiyle İncelenmesi (Bekçioğlu vd., 2018).
+        STRATEJİK BULGULAR:
+        1. BİST 100'de 15, 20, 36, 45 ve 60 günlük kısa süreli dalgalanmalar belirgindir.
+        2. 4.5 ay ve 1 yıl süreli mevsimsel döngüler mevcuttur.
+        3. 2 yıllık konjonktür dalgalanmaları ana trendi belirler.
+        4. Analizlerde serilerin durağanlığı (stationarity) ve birim kök testleri esastır.
+        TALİMAT: Analiz yaparken bu döngüsel periyotları göz önünde bulundur ve yatırımcıya 
+        bu periyotlardaki olası dönüşleri hatırlat.
+        """
     
     def build_prompt(self,sembol,temel,df,haberler_listesi,ai_rapor):
 
@@ -27,7 +38,10 @@ class Gemini(BaseLLM):
         #ÖNEMLİ: Yaptıgın son yorumda "Neden?" sorusuna cevap ver. Terimlere bogmadan, çokta uzatmadan, sonucun hangi veriden kaynaklandıgını açıkla. (Örn: "RSI 30'un altında oldugu için ucuz dedim" gibi).
         return f"""Sen dünyanın en iyi hedge fonlarında çalışan bir borsa uzmanısın. 
         Sen karşındaki kişinin yatırım asistanısın; samimi, abartısız ve net bir dil kullanabilirsin (arkadaşça ama profesyonel). Sakın yatırım tavsiyesi verme sadece elindeki bilgileri yorumla !
-    
+        
+        Aşağıdaki akademik bulguları analizine temel al:
+        {self.akademik_referans}
+
         ELİNDEKİ VERİLER {sembol} İÇİN:
 
         1. TEMEL ANALİZ:
@@ -109,11 +123,13 @@ class GroqDenetci(BaseLLM):
     def __init__(self,api_key,model="llama-3.1-8b-instant"):
         self.model=model
         self.client=Groq(api_key=api_key)
-    @staticmethod
-    def groq_safe(text):
-        if not isinstance(text, str):
-            return text
-        return text
+        
+        self.akademik_kurallar = """
+        BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
+        - BİST 100'de 15, 20, 36, 45 ve 60 günlük periyotlarda matematiksel dönüşler (ritimler) vardır.
+        - 4.5 ay ve 1 yıllık mevsimsel döngüler ana yön değişimleridir[cite: 607].
+        - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir[cite: 110, 118].
+        """
     
     def build_prompt(self,df,analiz_sonucu):
 
@@ -128,34 +144,33 @@ class GroqDenetci(BaseLLM):
         analiz_sonucu_safe = self.groq_safe(analiz_sonucu)
 
         # --- GÜNCELLENMİŞ GROQ PROMPTU ---
-        return f"""SEN BİR DENETÇİSİN (AUDITOR).
-        GÖREVİN: Aşağıdaki 'Gemini Raporu'nu, 'Gerçek Teknik Veriler' ile karşılaştırıp YALAN SÖYLÜYOR MU kontrol etmek.
+        gemini_prompt= f"""SEN SERT BİR BORSA DENETÇİSİSİN. 
+        Görevin Gemini raporundaki mantık hatalarını ve akademik çelişkileri bulmaktır.
 
-        GERÇEK TEKNİK VERİLER:
-        {teknik_ozet}
+        DENETİM ANAYASASI:
+        1. RSI > 70 iken Gemini "Bedava/Ucuz" diyorsa -> HATA.
+        2. MACD -1 iken Gemini "Yükseliş tam gaz" diyorsa -> HATA.
+        3. Fiyat < SMA200 iken Gemini "Boğa piyasası" diyorsa -> HATA.
+        4. {self.akademik_kurallar} -> Eğer Gemini bu periyotları (Örn: 45 günlük döngü) tamamen görmezden geliyorsa uyar.
 
-        GEMINI RAPORU:
-        {analiz_sonucu_safe}
-
-        KURALLAR:
-        1. Eğer RSI 70'in üzerindeyse ve Gemini "Ucuz" diyorsa -> BU BİR HATADIR.
-        2. Eğer MACD Sinyali -1 (Negatif) ise ve Gemini "Yükseliş trendi" diyorsa -> BU BİR HATADIR.
-        3. Eğer Fiyat, SMA200'ün altındaysa ve Gemini "Boğa piyasası" diyorsa -> BU BİR HATADIR.
-        4. SAYILARIN KÜSÜRATLARINA KARIŞMA ONLARI KISATABİLİR GEMİNİ. SAYININ KÜSÜRLERİNİ HATA SAYMA.
-        
-        CEVAP FORMATI (BU KURALLARA KESİNLİKLE UY):
-        - Eğer hata yoksa KESİNLİKLE açıklama yapma, madde madde sayma, özet geçme veya süreçten bahsetme. SADECE tek bir satır halinde şunu yaz: "✅ Analiz Onaylandı."
-        - Eğer hata varsa SADECE hatanın ne olduğunu tek bir cümleyle yaz: "⚠️ HATA TESPİT EDİLDİ: [Neden]"
-        
-        UNUTMA: Gevezelik etme, boş konuşma, sadece net sonucu ver!
+        CEVAP KURALI: 
+        - HATA YOKSA SADECE: "✅ Analiz Onaylandı." yaz.
+        - HATA VARSA SADECE: "⚠️ HATA TESPİT EDİLDİ: [Kısa Cümle]" yaz.
+        Asla açıklama yapma, kibar olma, gevezelik etme!
         """
+        user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
+        return gemini_prompt ,user_content
     
     def generate(self, prompt):
         try:
             chat_completion = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model=self.model,
+                temperature=0, # Mallığı bitiren altın ayar burası!
+                max_tokens=100 # Cevabı kısa tutmaya zorluyoruz
             )
-            return chat_completion.choices[0].message.content
+            res = chat_completion.choices[0].message.content.strip()
+            return res.split('\n')[0]
+        
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
