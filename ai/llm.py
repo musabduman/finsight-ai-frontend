@@ -60,13 +60,17 @@ class Gemini(BaseLLM):
 
         KARAR MEKANİZMAN (Bu kurallara sadık kal):
         • RSI: <30 (Aşırı Ucuz/Al Fırsatı), >70 (Aşırı Pahalı/Sat Fırsatı), 30-70 (Nötr/Trendi Takip Et).
-        • MACD_signal: 1 (Al/Yükseliş), -1 (Sat/Düşüş).
+        • MACD_signal: 1 (Kısa vadeli yükseliş momentumu), 0 (Nötr / dinlenme), -1 (Kısa vadeli zayıflama).
+        • MACD (Değer): Eğer MACD değeri POZİTİF ise ana trend yukarı kabul edilir. 
+            MACD pozitifken MACD_signal 0 veya -1 ise bu durumu "zayıflık" veya "sat" olarak yorumlama. 
+            Bu durumu yalnızca "momentum kaybı / dinlenme" olarak değerlendir ve güven skorunu sert düşürme.
         • SMA 50/200: Fiyat ortalamanın üzerindeyse POZİTİF, altındaysa NEGATİF.
         • VOLUME_SIGNAL: 1 ise Yükseliş gerçek (Güven artır), 0 ise Yükseliş zayıf (Tuzak olabilir).
         • BOLL_signal: Width (Bant Genişligi) düşüyorsa "SIKIŞMA" var (Patlama Yakın). Signal 1 ise yukarı, 0 ise yatay, -1 ise aşağı kırılım.
         • PIVOT: Fiyat > Pivot ise Hedef R1. Fiyat < Pivot ise Destek S1.
         • VOLATİLİTE: Yüksekse stop seviyesini biraz daha geniş tut, düşükse dar tut.
-
+        • Eğer fiyat SMA50 ve SMA200'ün üzerinde ve MACD değeri pozitif ise, MACD_signal -1 olsa bile ana yön POZİTİF kabul edilir.
+        
         GÖREVİN:
         Tüm verileri (Temel + Teknik + Haber) birleştir. Teknik veriler "AL" derken Haberler "KÖTÜ" ise güven skorunu düşür. Çelişkileri belirt.
 
