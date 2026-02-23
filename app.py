@@ -57,15 +57,15 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 API Ayarları")
 # Kullanıcıdan API anahtarını şifreli (yıldızlı) şekilde alıyoruz
 kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.", key="gemini_hafıza")
-groq_api_key = st.sidebar.text_input("Groq API Key (Denetçi)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
-denetleme=""
+groq_api_key = st.sidebar.text_input("Groq API Key (Agresif Yorumcu)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
+agresif_yorum=""
 if not kullanici_api_key:
     st.sidebar.warning("⚠️ Gemini API Key eksik!")
 else:
     st.sidebar.success("✅ Gemini Hazır")
 
 if not groq_api_key:
-    st.sidebar.warning("ℹ️ Groq anahtarı yok: Denetçi modu pasif.")
+    st.sidebar.warning("ℹ️ Groq anahtarı yok: Agresif yorumcu modu pasif.")
 
 if secim== "Tek Hisse Analizi":
     sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
@@ -118,14 +118,14 @@ if secim== "Tek Hisse Analizi":
                         try:
                             my_bar.progress(90, text="Groq analizi denetliyor...")
                             groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-                            denetleme = groq_bot(df, analiz_sonucu)
+                            agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
                         
                         except Exception as e:
-                            st.warning(f"Groq denetimi başarısız oldu, sadece Gemini raporu gösteriliyor.{e}")
-                            denetleme="⚠️ Groq'ta bir sorun ile karşılaşıldı."
+                            st.warning(f"Groq yorumu başarısız oldu, sadece Gemini raporu gösteriliyor.{e}")
+                            agresif_yorum="⚠️ Groq'ta bir sorun ile karşılaşıldı."
                     else:
                         # Groq yoksa direkt Gemini sonucunu bas
-                        denetleme="ℹ️ Groq API anahtarı girilmediği için denetim modu pasif."
+                        agresif_yorum="ℹ️ Groq API anahtarı girilmediği için agresif yorum pasif."
 
                     my_bar.progress(100, text="Yorum Tamamlandı!")
                     time.sleep(0.5)
@@ -154,14 +154,14 @@ if secim== "Tek Hisse Analizi":
                     c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                     c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
                 
-                    tab1,tab2,tab3=st.tabs(["📄 Gemini Raporu", "🛡️ Groq Denetimi", "🧮 Veri Tablosu"])
+                    tab1,tab2,tab3=st.tabs(["📄 Uzun Vadeli Rapor", "🚀 Agresif Yorum", "🧮 Veri Tablosu"])
                     with tab1:
                         st.markdown(analiz_sonucu)
                     with tab2:
-                        if "HATA" in denetleme or "⚠️" in denetleme:
-                            st.error(denetleme)
+                        if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
+                            st.error(agresif_yorum)
                         else:
-                            st.success(denetleme)
+                            st.success(agresif_yorum)
                     with tab3:
                         st.dataframe(df.tail(10))
 
@@ -380,7 +380,7 @@ elif secim == "BIST30 Tarama":
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
                         analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
-                        denetleme = groq_bot(df, analiz_sonucu)
+                        agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
                         
                         # Metrikleri Göster
                         c1, c2, c3, c4 = st.columns(4)
@@ -394,10 +394,10 @@ elif secim == "BIST30 Tarama":
                         with tab1:
                             st.markdown(analiz_sonucu)
                         with tab2:
-                            if "HATA" in denetleme or "⚠️" in denetleme:
-                                st.error(denetleme)
+                            if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
+                                st.error(agresif_yorum)
                             else:
-                                st.success(denetleme)
+                                st.success(agresif_yorum)
                     except Exception as e:
                         st.error(f"⚠️ {clean_symbol} analizi sırasında bir hata oluştu (Muhtemelen API limiti aşıldı). Detay: {e}")
                 time.sleep(7)
