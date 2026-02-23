@@ -10,7 +10,7 @@ class TechnicalAnalyzer:
         self.df['Upper'] = self.df['SMA'] + 2 * std
         self.df['Lower'] = self.df['SMA'] - 2 * std
         self.df['Width'] = (self.df['Upper'] - self.df['Lower']) / self.df['SMA']
-        self.df['Signal'] = np.select(
+        self.df['BOLL_signal'] = np.select(
             [self.df['Close'] > self.df['Upper'], self.df['Close'] < self.df['Lower']],
             [1, -1],
             default=0
@@ -18,7 +18,7 @@ class TechnicalAnalyzer:
         return self.df
 
     def volume_trend(self, window=10):
-        self.df['volume_signal'] = np.where(
+        self.df['VOLUME_signal'] = np.where(
             self.df['Volume'] > self.df['Volume'].rolling(window=window).mean(), 1, 0
         )
         return self.df['volume_signal']

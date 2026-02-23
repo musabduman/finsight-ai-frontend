@@ -282,8 +282,16 @@ elif secim == "BIST30 Tarama":
             son = df.iloc[-1]
             # Not: Bu sütunların (Width, Signal, MACD_signal vb.) teknik_analiz(df) içinde hesaplandığından emin olun!
             wonderkid = (son.get('Width', 1) < 0.15) and (son.get('RSI', 50) < 60)
-            erken_uyari = (son.get('MACD_signal', 0) == 1) and (son.get('Signal', 0) == 1)
-            ralli = (son.get('MACD_signal', 0) == 1) and (son.get('Signal', 0) == 1) and (son.get('Volume_signal', 0) == 1)
+            erken_uyari = (
+                (son.get('MACD_signal', 0) == 1) and
+                (son.get('BOLL_signal', 0) == 1)
+            )
+
+            ralli = (
+                (son.get('MACD_signal', 0) == 1) and
+                (son.get('BOLL_signal', 0) == 1) and
+                (son.get('VOLUME_signal', 0) == 1)
+            )
 
             if ralli:
                 return True, "🚀 Ralli Modu"
