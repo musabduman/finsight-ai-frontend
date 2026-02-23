@@ -23,6 +23,8 @@ class deeplearning:
                 return {"yön": "VERİ YOK", "güven": "0"}
         data=df.copy()
 
+        df = df.sort_index(ascending=True)
+        
         df['Getiri'] = df['Close'].pct_change()
         df['Hacim_degisimi'] = df['Volume'].pct_change()
         df['Oynaklık'] = (df['High'] - df['Low']) / df['Close']

@@ -8,7 +8,7 @@ import yfinance as yf
 from ddgs import DDGS
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
-from ai.llm import Gemini, OllamaLLM
+from ai.llm import Gemini, GroqDenetci
 
 import os
 from dotenv import load_dotenv
