@@ -21,7 +21,7 @@ class TechnicalAnalyzer:
         self.df['VOLUME_signal'] = np.where(
             self.df['Volume'] > self.df['Volume'].rolling(window=window).mean(), 1, 0
         )
-        return self.df['volume_signal']
+        return self.df['VOLUME_signal']
 
     def calcu_volatility(self,window=20):
         self.df['Returns'] = self.df['Close'].pct_change()
