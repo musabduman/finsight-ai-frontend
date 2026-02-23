@@ -245,7 +245,7 @@ elif secim == "Mega Tarama":
                 })
                 
             # Yahoo Finance ban yememek için ufak bir bekleme süresi
-            time.sleep(0.1) 
+            time.sleep(0.5) 
                 
         progress_bar.empty()
         
@@ -388,7 +388,7 @@ elif secim == "BIST30 Tarama":
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
                         
                         # Temel Analiz Verileri
-                        info = hisse.fast_info
+                        info = get_fast_info(clean_symbol)
                         temel = {
                             "FK": info.get('trailingPE', 'Yok'),
                             "PD/DD": info.get('priceToBook', 'Yok'),
