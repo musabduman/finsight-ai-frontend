@@ -85,8 +85,6 @@ if not groq_api_key:
 if secim== "Tek Hisse Analizi":
     sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
     analiz_button=st.button("Analizi Başlat", type="primary")
-    
-    clean_symbol, df, info = get_stock_data(sembol_input)
 
     col1,col2=st.columns([3,1])
 
@@ -123,7 +121,10 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(sembol)
 
+                    
+                    clean_symbol, df, info = get_stock_data(sembol_input)
                     info=get_fast_info(clean_symbol)
+                    
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
