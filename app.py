@@ -21,20 +21,33 @@ st.sidebar.info("""
 * 🧮 PyTorch (Kahin) 
 """)
 
-def get_stock_data(symbol):
+def normalize_symbol(symbol: str):
     tr_to_en = str.maketrans("ıiğüşöçIİĞÜŞÖÇ", "IIGUSOCIIGUSOC")
     clean_symbol = str(symbol).translate(tr_to_en).upper().strip()
     if not clean_symbol.endswith(".IS"):
-        clean_symbol+=".IS"
+        clean_symbol += ".IS"
+    return clean_symbol
+
+@st.cache_data(ttl=1800)
+def get_price_data(symbol):
+    return yf.download(symbol, period="3y", progress=False)
+
+@st.cache_data(ttl=1800)
+def get_fast_info(symbol):
+    return yf.Ticker(symbol).fast_info
+
+def get_stock_data(symbol):
     try:
-        hisse=yf.Ticker(clean_symbol)
-        df=hisse.history(period="3y")
-        return hisse ,clean_symbol,df
+        clean_symbol = normalize_symbol(symbol)
+        df = get_price_data(clean_symbol)
+        info = get_fast_info(clean_symbol)
+        return clean_symbol, df, info
+
     except Exception as e:
-        print(f"⚠️ DİKKAT: Yahoo Finance '{clean_symbol}' için BOŞ veri gönderdi. (Hisse adını yanlış yazmış veya ban yemiş olabiliriz)")
+        st.error(f"⚠️ '{symbol}' için veri alınamadı. Ban yemiş olabiliriz veya sembol hatalı.")
         st.stop()
-        return None,None,None
-    
+        return None, None, None
+
 def haber_cek_web(symbol):
     haberler_listesi = []
     try:
@@ -49,6 +62,8 @@ def haber_cek_web(symbol):
     except:
         return "Haber verisi cekilemedi"
     return haberler_listesi
+
+
 
 st.title("🚀 Borsa İstanbul Yapay Zeka Analisti")
 st.markdown("---")
@@ -71,6 +86,8 @@ if secim== "Tek Hisse Analizi":
     sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
     analiz_button=st.button("Analizi Başlat", type="primary")
     
+    clean_symbol, df, info = get_stock_data(sembol_input)
+
     col1,col2=st.columns([3,1])
 
     with col1:    
@@ -106,7 +123,7 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(sembol)
 
-                    info=hisse.info
+                    info=get_fast_info(clean_symbol)
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
@@ -370,7 +387,7 @@ elif secim == "BIST30 Tarama":
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
                         
                         # Temel Analiz Verileri
-                        info = hisse.info
+                        info = hisse.fast_info
                         temel = {
                             "FK": info.get('trailingPE', 'Yok'),
                             "PD/DD": info.get('priceToBook', 'Yok'),
