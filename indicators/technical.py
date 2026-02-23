@@ -33,7 +33,14 @@ class TechnicalAnalyzer:
         exp2 = self.df['Close'].ewm(span=26, adjust=False).mean()
         self.df['MACD'] = exp1 - exp2
         self.df['Signal_line'] = self.df['MACD'].ewm(span=9, adjust=False).mean()
-        self.df['MACD_signal'] = np.where(self.df['MACD'] > self.df['Signal_line'], 1, -1)
+        self.df['MACD_signal'] = np.where(
+            (self.df['MACD'] > self.df['Signal_line']) & 
+            (self.df['MACD'].shift(1) <= self.df['Signal_line'].shift(1)),1,
+        np.where(
+            (self.df['MACD'] < self.df['Signal_line']) &
+            (self.df['MACD'].shift(1) >= self.df['Signal_line'].shift(1)),-1,
+            0
+        ))
         return self.df
 
     def calcu_pivot(self):
