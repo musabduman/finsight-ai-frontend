@@ -215,7 +215,7 @@ elif secim == "Mega Tarama":
             
             clean_symbol, df, info = get_stock_data(sembol)
             
-            if df is not None and not df.empty:
+            try:
                 # Teknik analiz verilerini hesapla
                 df = teknik_analiz(df)
                 df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
@@ -245,7 +245,8 @@ elif secim == "Mega Tarama":
                     "RSI": round(rsi, 2),
                     "MACD": round(macd, 2)
                 })
-                
+            except Exception as e:
+                st.error("Bir hata ile karşılaşıldı {e}")        
             # Yahoo Finance ban yememek için ufak bir bekleme süresi
             time.sleep(0.5) 
                 
