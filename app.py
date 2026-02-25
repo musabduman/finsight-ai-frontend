@@ -101,7 +101,7 @@ if secim== "Tek Hisse Analizi":
                 progress_text="Yapay zekalar göreve çağrılıyor..."
                 my_bar=st.progress(0, text=progress_text)
 
-                hisse, sembol, df= get_stock_data(sembol_input)
+                clean_symbol, df, info= get_stock_data(sembol_input)
 
                 try:
                     my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
@@ -116,18 +116,14 @@ if secim== "Tek Hisse Analizi":
                     ai_rapor=f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']} TL, güven: %{sonuc_dl['güven']}"
                     
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
-                    haberler_listesi=haber_cek_web(sembol)
-
-                    
-                    clean_symbol, df, info = get_stock_data(sembol_input)
-                    info=get_fast_info(clean_symbol)
+                    haberler_listesi=haber_cek_web(clean_symbol)
                     
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
-                    analiz_sonucu=gemini_bot(sembol,temel,df,haberler_listesi,ai_rapor)
+                    analiz_sonucu=gemini_bot(clean_symbol,temel,df,haberler_listesi,ai_rapor)
                 
                 except Exception as e:
                     st.error("Hisse bulunamadı ya da veri çekilemedi! {e}")
@@ -158,7 +154,7 @@ if secim== "Tek Hisse Analizi":
                     # --- GRAFİK KISMI ---
                     # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
                     # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
-                    st.subheader(f"📊 {sembol} Analiz Paneli")
+                    st.subheader(f"📊 {clean_symbol} Analiz Paneli")
                     grafik_listesi = df_temiz['Close'].tolist() 
                     st.line_chart(grafik_listesi)
 
@@ -212,7 +208,7 @@ elif secim == "Mega Tarama":
             # İlerleme çubuğunu güncelle
             progress_bar.progress((i + 1) / len(bist100_hisseler), text=f"({i+1}/{len(bist100_hisseler)}) {sembol} analiz ediliyor...")
             
-            hisse, clean_symbol, df = get_stock_data(sembol)
+            clean_symbol, df, info = get_stock_data(sembol)
             
             if df is not None and not df.empty:
                 # Teknik analiz verilerini hesapla
@@ -346,7 +342,7 @@ elif secim == "BIST30 Tarama":
         for i, sembol in enumerate(bist30_hisseler):
             progress_bar.progress((i + 1) / len(bist30_hisseler), text=f"Radar devrede: {sembol} taranıyor...")
             
-            hisse, clean_symbol, df = get_stock_data(sembol)
+            clean_symbol, df, info = get_stock_data(sembol)
             
             if df is not None and not df.empty:
                 df = teknik_analiz(df)
@@ -354,7 +350,7 @@ elif secim == "BIST30 Tarama":
                 
                 # Eğer sinyal varsa, derin analiz için listeye ekle
                 if sinyal_var_mi:
-                    bulunan_hisseler.append((hisse, clean_symbol, df, mesaj))
+                    bulunan_hisseler.append((info, clean_symbol, df, mesaj))
             
             time.sleep(0.1) # Yahoo Finance ban koruması
             
