@@ -70,7 +70,19 @@ def haber_cek_web(symbol):
         return "Haber verisi cekilemedi"
     return haberler_listesi
 
-st.title("🚀 Borsa İstanbul Yapay Zeka Analisti")
+def df_ozet_uret(df):
+    son = df.iloc[-1]
+
+    ozet = {
+        "Son Fiyat": round(float(son['Close']), 2),
+        "RSI": round(float(son.get('RSI', 0)), 2),
+        "MACD": round(float(son.get('MACD', 0)), 2),
+        "Hacim": int(son.get('Volume', 0)),
+        "Trend": "Yukarı" if son.get('MACD', 0) > 0 else "Aşağı"
+    }
+    return ozet
+
+st.title("🚀 Borsa İstanbul Analisti")
 st.markdown("---")
 
 st.sidebar.markdown("---")
@@ -124,15 +136,17 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
                     
+                    df_ozet=df_ozet_uret(df)
+
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
-                    analiz_sonucu=gemini_bot(clean_symbol,temel,df,haberler_listesi,ai_rapor)
+                    analiz_sonucu=gemini_bot(clean_symbol,temel,df_ozet,haberler_listesi,ai_rapor)
                 
                 except Exception as e:
-                    st.error("Hisse bulunamadı ya da veri çekilemedi! {e}")
+                    st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
                     analiz_sonucu=""
 
                     if groq_api_key:
@@ -250,7 +264,7 @@ elif secim == "Mega Tarama":
                     "MACD": round(macd, 2)
                 })
             except Exception as e:
-                st.error("Bir hata ile karşılaşıldı {e}")        
+                st.error(f"Bir hata ile karşılaşıldı {e}")        
             # Yahoo Finance ban yememek için ufak bir bekleme süresi
             time.sleep(0.5) 
                 
@@ -393,7 +407,7 @@ elif secim == "BIST30 Tarama":
                         dl_guven = 0 if pd.isna(sonuc_dl.get('güven', 0)) else sonuc_dl.get('güven', 0)
                         
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
-                        
+                        df_ozet=df_ozet_uret(df)
                         # Temel Analiz Verileri
                         info = get_fast_info(clean_symbol)
                         temel = {
@@ -404,7 +418,7 @@ elif secim == "BIST30 Tarama":
                         
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
-                        analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
+                        analiz_sonucu = gemini_bot(clean_symbol, temel, df_ozet, haberler_listesi, ai_rapor)
                         agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
                         
                         # Metrikleri Göster
