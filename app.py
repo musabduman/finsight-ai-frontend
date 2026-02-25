@@ -63,8 +63,6 @@ def haber_cek_web(symbol):
         return "Haber verisi cekilemedi"
     return haberler_listesi
 
-
-
 st.title("🚀 Borsa İstanbul Yapay Zeka Analisti")
 st.markdown("---")
 
@@ -104,9 +102,7 @@ if secim== "Tek Hisse Analizi":
 
                 hisse, sembol, df= get_stock_data(sembol_input)
 
-                if df is None or df.empty:
-                    st.error("Hisse bulunamadı ya da veri çekilemedi!")
-                else:
+                try:
                     my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
                     df=teknik_analiz(df)
 
@@ -131,6 +127,10 @@ if secim== "Tek Hisse Analizi":
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
                     analiz_sonucu=gemini_bot(sembol,temel,df,haberler_listesi,ai_rapor)
+                
+                except Exception as e:
+                    st.error("Hisse bulunamadı ya da veri çekilemedi! {e}")
+                    analiz_sonucu=""
 
                     if groq_api_key:
                         try:
