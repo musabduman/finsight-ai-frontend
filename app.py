@@ -155,19 +155,18 @@ if secim== "Tek Hisse Analizi":
 
                     # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
                     # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
-                    df_temiz = df.copy()
-                    df_temiz = df_temiz.ffill().bfill().fillna(0) # NaN'ları doldur
+                    df = df.ffill().bfill().fillna(0) # NaN'ları doldur
 
                     # --- GRAFİK KISMI ---
                     # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
                     # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
                     st.subheader(f"📊 {clean_symbol} Analiz Paneli")
-                    grafik_listesi = df_temiz['Close'].tolist() 
+                    grafik_listesi = df['Close'].tolist() 
                     st.line_chart(grafik_listesi)
 
                     # --- METRİKLER (NaN Korumalı) ---
-                    son_fiyat = float(df_temiz['Close'].iloc[-1])
-                    rsi_deger = float(df_temiz['RSI'].iloc[-1])
+                    son_fiyat = float(df['Close'].iloc[-1])
+                    rsi_deger = float(df['RSI'].iloc[-1])
                                     
                     c1,c2,c3,c4=st.columns(4)
                     son_fiyat=df['Close'].iloc[-1]
