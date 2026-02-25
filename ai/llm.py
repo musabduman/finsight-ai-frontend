@@ -230,8 +230,8 @@ class GroqDenetci(BaseLLM):
             chat_completion = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model=self.model,
-                temperature=0, # Mallığı bitiren altın ayar burası!
-                max_tokens=100 # Cevabı kısa tutmaya zorluyoruz
+                temperature=0.4, # Mallığı bitiren altın ayar burası!
+                max_tokens=4096 # Cevabı kısa tutmaya zorluyoruz
             )
             res = chat_completion.choices[0].message.content.strip()
             return res.split('\n')[0]

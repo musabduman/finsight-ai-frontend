@@ -132,18 +132,22 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(50, text="Pythorc sayısal tahmin yapıyor...")
                     
                     df_muhasebeci=df[['Open','High','Low','Close','Volume']].dropna()
-                    sonuc_dl=dl_bot.analiz_et(df_muhasebeci)
-                    ai_rapor=f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']} TL, güven: %{sonuc_dl['güven']}"
+                    if len(df_muhasebeci)<50:
+                        sonuc_dl = {'yön': 'Veri Yetersiz', 'tahmin': 0, 'güven': 0}
+                    else:
+                        sonuc_dl=dl_bot.analiz_et(df_muhasebeci)
+                    
+                    ai_rapor=f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
                     
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
-                    
+                    df_kısa=df.tail(30)
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
-                    analiz_sonucu=gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
+                    analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor)
                 
                 except Exception as e:
                     st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
@@ -153,7 +157,7 @@ if secim== "Tek Hisse Analizi":
                         try:
                             my_bar.progress(90, text="Groq analizi denetliyor...")
                             groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-                            agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
+                            agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor)
                         
                         except Exception as e:
                             st.warning(f"Groq yorumu başarısız oldu, sadece Gemini raporu gösteriliyor.{e}")
