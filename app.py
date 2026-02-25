@@ -53,7 +53,6 @@ def get_stock_data(symbol):
 
     except Exception as e:
         st.error(f"⚠️ '{symbol}' için veri alınamadı. Ban yemiş olabiliriz veya sembol hatalı. {e}")
-        st.stop()
         return None, None, None
 
 def haber_cek_web(symbol):
@@ -217,6 +216,9 @@ elif secim == "Mega Tarama":
             
             clean_symbol, df, info = get_stock_data(sembol)
             
+            if df is None or df.empty:
+                continue
+
             try:
                 # Teknik analiz verilerini hesapla
                 df = teknik_analiz(df)
