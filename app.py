@@ -32,11 +32,12 @@ def normalize_symbol(symbol: str):
 def get_price_data(symbol):
     df=yf.download(symbol, period="3y", progress=False)
     
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(1)
+    
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
     
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.droplevel(1)
     return df
 
 @st.cache_data(ttl=1800)
@@ -69,18 +70,6 @@ def haber_cek_web(symbol):
     except:
         return "Haber verisi cekilemedi"
     return haberler_listesi
-
-def df_ozet_uret(df):
-    son = df.iloc[-1]
-
-    ozet = {
-        "Son Fiyat": round(float(son['Close']), 2),
-        "RSI": round(float(son.get('RSI', 0)), 2),
-        "MACD": round(float(son.get('MACD', 0)), 2),
-        "Hacim": int(son.get('Volume', 0)),
-        "Trend": "Yukarı" if son.get('MACD', 0) > 0 else "Aşağı"
-    }
-    return ozet
 
 st.title("🚀 Borsa İstanbul Analisti")
 st.markdown("---")
@@ -136,14 +125,12 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
                     
-                    df_ozet=df_ozet_uret(df)
-
                     temel={
                         "FK": info.get('trailingPE', 'Yok'),
                         "PD/DD": info.get('priceToBook', 'Yok'),
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
-                    analiz_sonucu=gemini_bot(clean_symbol,temel,df_ozet,haberler_listesi,ai_rapor)
+                    analiz_sonucu=gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
                 
                 except Exception as e:
                     st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
@@ -230,9 +217,6 @@ elif secim == "Mega Tarama":
             
             clean_symbol, df, info = get_stock_data(sembol)
             
-            if df is None or df.empty:
-                continue
-
             try:
                 # Teknik analiz verilerini hesapla
                 df = teknik_analiz(df)
@@ -368,14 +352,16 @@ elif secim == "BIST30 Tarama":
             
             clean_symbol, df, info = get_stock_data(sembol)
             
-            if df is not None and not df.empty:
+            try:
                 df = teknik_analiz(df)
                 sinyal_var_mi, mesaj = sinyal_kontrol(df)
                 
                 # Eğer sinyal varsa, derin analiz için listeye ekle
                 if sinyal_var_mi:
                     bulunan_hisseler.append((info, clean_symbol, df, mesaj))
-            
+            except Exception as e:
+                st.error(f"Hata! {e}")
+                
             time.sleep(0.1) # Yahoo Finance ban koruması
             
         progress_bar.empty()
@@ -388,7 +374,7 @@ elif secim == "BIST30 Tarama":
             analiz_bar = st.progress(0, text="Yapay zeka ajanları çalışıyor, lütfen API yanıtlarını bekleyin...")
             # Bulunan her hisse için expander (açılır kapanır kutu) oluştur
            
-            for idx,(hisse, clean_symbol, df, mesaj) in enumerate(bulunan_hisseler):
+            for idx,(info, clean_symbol, df, mesaj) in enumerate(bulunan_hisseler):
                 analiz_bar.progress((idx + 1) / len(bulunan_hisseler), text=f"({idx+1}/{len(bulunan_hisseler)}) {clean_symbol} için derin analiz yapılıyor...")
                 
                 with st.expander(f"📌 {clean_symbol} | Yakalanan Sinyal: {mesaj}", expanded=False):
@@ -407,7 +393,7 @@ elif secim == "BIST30 Tarama":
                         dl_guven = 0 if pd.isna(sonuc_dl.get('güven', 0)) else sonuc_dl.get('güven', 0)
                         
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
-                        df_ozet=df_ozet_uret(df)
+                    
                         # Temel Analiz Verileri
                         info = get_fast_info(clean_symbol)
                         temel = {
@@ -418,7 +404,7 @@ elif secim == "BIST30 Tarama":
                         
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
-                        analiz_sonucu = gemini_bot(clean_symbol, temel, df_ozet, haberler_listesi, ai_rapor)
+                        analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
                         agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
                         
                         # Metrikleri Göster
