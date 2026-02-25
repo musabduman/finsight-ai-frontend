@@ -4,7 +4,6 @@ import time
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from duckduckgo_search import DDGS
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, GroqDenetci
@@ -56,16 +55,26 @@ def get_stock_data(symbol):
 def haber_cek_web(symbol):
     haberler_listesi = []
     try:
-        with DDGS() as ddgs:
-            query = f"{symbol.replace('.IS','')} hisse haberleri"
-            result = ddgs.news(keywords=query, region="tr-tr", safesearch="off", max_results=5)
-            for r in result:
-                tarih = r.get('date', '')[:10]
-                baslik = r.get('title', 'Başlık yok')
-                kaynak = r.get('source', 'Bilinmiyor')
-                haberler_listesi.append(f"-[{tarih}]{kaynak}:{baslik}")
-    except:
-        return "Haber verisi cekilemedi"
+        # DuckDuckGo yerine Yfinance'in kendi haber modülünü kullanıyoruz
+        ticker = yf.Ticker(symbol)
+        news = ticker.news
+        
+        if not news:
+            return ["Son güncel haber bulunamadı."]
+            
+        # Sadece en güncel 5 haberi alıyoruz
+        for n in news[:5]:
+            baslik = n.get('title', 'Başlık yok')
+            kaynak = n.get('publisher', 'Bilinmiyor')
+            # UNIX zaman damgasını okunabilir tarihe çevir
+            tarih_unix = n.get('providerPublishTime')
+            tarih = time.strftime('%Y-%m-%d', time.localtime(tarih_unix)) if tarih_unix else 'Tarih Yok'
+            
+            haberler_listesi.append(f"- [{tarih}] {kaynak}: {baslik}")
+            
+    except Exception as e:
+        return [f"Haber verisi çekilemedi. Detay: {e}"]
+        
     return haberler_listesi
 
 st.title("🚀 Borsa İstanbul Analisti")
@@ -109,7 +118,7 @@ if secim== "Tek Hisse Analizi":
                 if  df is None or df.empty:
                         st.error("Veri çekilemediği için analize devam edilemiyor. Lütfen biraz bekleyip tekrar deneyin.")
                         st.stop()
-                        
+
                 try:
                     my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
                     df=teknik_analiz(df)
