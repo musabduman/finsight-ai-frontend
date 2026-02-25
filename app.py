@@ -30,7 +30,12 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    return yf.download(symbol, period="3y", progress=False)
+    yf.download(symbol, period="3y", progress=False)
+    
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(1)
+    
+    return df
 
 @st.cache_data(ttl=1800)
 def get_fast_info(symbol):
