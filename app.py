@@ -30,10 +30,7 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    df=yf.download(symbol, period="3y", progress=False)
-    
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.droplevel(1)
+    df=yf.download(symbol, period="3y", progress=False, multi_level_index=False)
     
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
@@ -109,10 +106,17 @@ if secim== "Tek Hisse Analizi":
                 my_bar=st.progress(0, text=progress_text)
 
                 clean_symbol, df, info= get_stock_data(sembol_input)
-
+                if  df is None or df.empty:
+                        st.error("Veri çekilemediği için analize devam edilemiyor. Lütfen biraz bekleyip tekrar deneyin.")
+                        st.stop()
+                        
                 try:
                     my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
                     df=teknik_analiz(df)
+                    
+                    # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
+                    # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
+                    df = df.ffill().bfill().fillna(0) # NaN'ları doldur
 
                     dl_bot=deeplearning()
                     gemini_bot=Gemini(api_key=kullanici_api_key)
@@ -152,10 +156,6 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(100, text="Yorum Tamamlandı!")
                     time.sleep(0.5)
                     my_bar.empty()
-
-                    # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
-                    # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
-                    df = df.ffill().bfill().fillna(0) # NaN'ları doldur
 
                     # --- GRAFİK KISMI ---
                     # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
