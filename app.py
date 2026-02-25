@@ -44,7 +44,7 @@ def get_stock_data(symbol):
         return clean_symbol, df, info
 
     except Exception as e:
-        st.error(f"⚠️ '{symbol}' için veri alınamadı. Ban yemiş olabiliriz veya sembol hatalı.")
+        st.error(f"⚠️ '{symbol}' için veri alınamadı. Ban yemiş olabiliriz veya sembol hatalı. {e}")
         st.stop()
         return None, None, None
 
