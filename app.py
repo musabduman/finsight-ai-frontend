@@ -34,7 +34,8 @@ def get_price_data(symbol):
 
 @st.cache_data(ttl=1800)
 def get_fast_info(symbol):
-    return yf.Ticker(symbol).fast_info
+    ticker=yf.Ticker(symbol).fast_info
+    return dict(ticker)
 
 def get_stock_data(symbol):
     try:
