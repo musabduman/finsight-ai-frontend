@@ -1,6 +1,7 @@
 from google import genai
 from groq import Groq
 import time
+import pandas as pd     
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -35,6 +36,17 @@ class Gemini(BaseLLM):
         temel_metin = "\n".join([f"- {k}: {v}" for k, v in temel.items()]) if temel else "Temel veri bulunamadı."
         haberler_metni="\n".join(haberler_listesi) if haberler_listesi else "Haber verisi bulunamadı."
         
+        if isinstance(haberler_listesi, list):
+            haberler_metni = "\n".join(str(h) for h in haberler_listesi)
+        elif isinstance(haberler_listesi, str):
+            haberler_metni = haberler_listesi
+        else:
+            haberler_metni = "Haber verisi bulunamadı."
+
+        if isinstance(temel, dict):
+            temel_metin = "\n".join([f"- {k}: {v}" for k, v in temel.items()])
+        else:
+            temel_metin = "Temel veri bulunamadı."
 
         return f"""Sen dünyanın en iyi hedge fonlarında çalışan bir borsa uzmanısın. 
         Sen karşındaki kişinin yatırım asistanısın; samimi, abartısız ve net bir dil kullanabilirsin (arkadaşça ama profesyonel). Sakın yatırım tavsiyesi verme sadece elindeki bilgileri yorumla !
@@ -143,13 +155,28 @@ class GroqDenetci(BaseLLM):
         """
     
     def build_prompt(self,df,analiz_sonucu,ai_rapor):
-
+        
+        def safe_get(series, key, default="Yok"):
+            try:
+                val = series[key]
+                if pd.isna(val):
+                    return default
+                return round(float(val), 4)
+            except (KeyError, TypeError, ValueError):
+                return default
+            
         son_veri = df.iloc[-1]
         teknik_ozet = f"""
-        RSI: {son_veri.get('RSI', 'Yok')}
-        MACD_Signal: {son_veri.get('MACD_signal', 'Yok')} (1=Pozitif, -1=Negatif)
-        Fiyat: {son_veri.get('Close', 0)}
-        SMA200: {son_veri.get('SMA_200', 0)}
+        RSI: {safe_get(son_veri, 'RSI')}
+        MACD: {safe_get(son_veri, 'MACD')}
+        MACD_Signal: {safe_get(son_veri, 'MACD_signal')} (1=Pozitif, -1=Negatif)
+        SMA20: {safe_get(son_veri, 'SMA_20', 0)}
+        SMA50: {safe_get(son_veri, 'SMA_50', 0)}
+        SMA200: {safe_get(son_veri, 'SMA_200', 0)}
+        Fiyat: {safe_get(son_veri, 'Close', 0)}
+        BOLL Width: {safe_get(son_veri, 'Width', 0)}
+        VOLUME_SIGNAL: {safe_get(son_veri, 'VOLUME_signal', 'Yok')}
+        Volatilite: {safe_get(son_veri, 'Volatility', 'Yok')}
         """
         
         # --- GÜNCELLENMİŞ GROQ PROMPTU ---
@@ -234,7 +261,7 @@ class GroqDenetci(BaseLLM):
                 max_tokens=4096 # Cevabı kısa tutmaya zorluyoruz
             )
             res = chat_completion.choices[0].message.content.strip()
-            return res.split('\n')[0]
+            return res
         
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"

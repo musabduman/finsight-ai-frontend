@@ -41,41 +41,68 @@ def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
     return dict(ticker)
 
+def get_temel_info(symbol):
+    """Temel analiz verisi — FK, PD/DD, Sektör için ticker.info kullanır"""
+    try:
+        info = yf.Ticker(symbol).info
+        return {
+            "FK": info.get("trailingPE", "Yok"),
+            "PD/DD": info.get("priceToBook", "Yok"),
+             "Sektor": info.get("sector", "Bilinmiyor"),
+            "Kar Marji": info.get("profitMargins", "Yok"),
+            "Piyasa Degeri": info.get("marketCap", "Yok"),
+        }
+    except Exception:
+        return {"FK": "Yok", "PD/DD": "Yok", "Sektor": "Bilinmiyor",
+                "Kar Marji": "Yok", "Piyasa Degeri": "Yok"}
+
 def get_stock_data(symbol):
     try:
         clean_symbol = normalize_symbol(symbol)
         df = get_price_data(clean_symbol)
-        info = get_fast_info(clean_symbol)
+        info = get_fast_info(clean_symbol)   # sadece fiyat için
         return clean_symbol, df, info
-
     except Exception as e:
-        st.error(f"⚠️ '{symbol}' için veri alınamadı. Ban yemiş olabiliriz veya sembol hatalı. {e}")
+        st.error(f"⚠️ '{symbol}' için veri alınamadı: {e}")
         return None, None, None
-
+    
 def haber_cek_web(symbol):
     haberler_listesi = []
     try:
-        # DuckDuckGo yerine Yfinance'in kendi haber modülünü kullanıyoruz
         ticker = yf.Ticker(symbol)
         news = ticker.news
-        
+
         if not news:
             return ["Son güncel haber bulunamadı."]
-            
-        # Sadece en güncel 5 haberi alıyoruz
+
         for n in news[:5]:
-            baslik = n.get('title', 'Başlık yok')
-            kaynak = n.get('publisher', 'Bilinmiyor')
-            # UNIX zaman damgasını okunabilir tarihe çevir
-            tarih_unix = n.get('providerPublishTime')
-            tarih = time.strftime('%Y-%m-%d', time.localtime(tarih_unix)) if tarih_unix else 'Tarih Yok'
-            
-            haberler_listesi.append(f"- [{tarih}] {kaynak}: {baslik}")
-            
+            try:
+                # ── YENİ FORMAT: yfinance >= 0.2.50 ──
+                if "content" in n and isinstance(n["content"], dict):
+                    icerik = n["content"]
+                    baslik = icerik.get("title", "Başlık yok")
+                    kaynak = (icerik.get("provider") or {}).get("displayName", "Bilinmiyor")
+                    tarih_raw = icerik.get("pubDate", "")
+                    # "2024-01-15T10:30:00Z" → "2024-01-15"
+                    tarih = tarih_raw[:10] if tarih_raw else "Tarih Yok"
+
+                # ── ESKİ FORMAT: yfinance < 0.2.50 ──
+                else:
+                    baslik = n.get("title", "Başlık yok")
+                    kaynak = n.get("publisher", "Bilinmiyor")
+                    tarih_unix = n.get("providerPublishTime")
+                    tarih = time.strftime("%Y-%m-%d", time.localtime(tarih_unix)) \
+                            if tarih_unix else "Tarih Yok"
+
+                haberler_listesi.append(f"- [{tarih}] {kaynak}: {baslik}")
+
+            except Exception:
+                continue  # Tek bir haber parse edilemezse diğerine geç
+
     except Exception as e:
         return [f"Haber verisi çekilemedi. Detay: {e}"]
-        
-    return haberler_listesi
+
+    return haberler_listesi if haberler_listesi else ["Haber bulunamadı."]
 
 st.title("🚀 Borsa İstanbul Analisti")
 st.markdown("---")
@@ -148,23 +175,18 @@ if secim== "Tek Hisse Analizi":
                         "Sektor": info.get('sector', 'Bilinmiyor')
                     }    
                     analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor)
-                
-                except Exception as e:
-                    st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
-                    analiz_sonucu=""
 
                     if groq_api_key:
-                        try:
-                            my_bar.progress(90, text="Groq analizi denetliyor...")
-                            groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-                            agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor)
-                        
-                        except Exception as e:
-                            st.warning(f"Groq yorumu başarısız oldu, sadece Gemini raporu gösteriliyor.{e}")
-                            agresif_yorum="⚠️ Groq'ta bir sorun ile karşılaşıldı."
+                        my_bar.progress(90, text="Groq analizi denetliyor...")
+                        groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
+                        agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor)
                     else:
                         # Groq yoksa direkt Gemini sonucunu bas
                         agresif_yorum="ℹ️ Groq API anahtarı girilmediği için agresif yorum pasif."
+
+                except Exception as e:
+                    st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
+                    analiz_sonucu=""
 
                     my_bar.progress(100, text="Yorum Tamamlandı!")
                     time.sleep(0.5)
