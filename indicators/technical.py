@@ -4,7 +4,7 @@ class TechnicalAnalyzer:
     def __init__(self,df):
         self.df=df.copy()
 
-    def bollinger(self, window):
+    def bollinger(self, window=20):
         self.df['SMA'] = self.df['Close'].rolling(window=20).mean()
         std = self.df['Close'].rolling(window=window).std()
         self.df['Upper'] = self.df['SMA'] + 2 * std
@@ -18,10 +18,10 @@ class TechnicalAnalyzer:
         return self.df
 
     def volume_trend(self, window=10):
-        self.df['VOLUME_signal'] = np.where(
+        self.df['Volume_signal'] = np.where(
             self.df['Volume'] > self.df['Volume'].rolling(window=window).mean(), 1, 0
         )
-        return self.df['VOLUME_signal']
+        return self.df['Volume_signal']
 
     def calcu_volatility(self,window=20):
         self.df['Returns'] = self.df['Close'].pct_change()

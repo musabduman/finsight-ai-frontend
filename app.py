@@ -169,11 +169,8 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
                     df_kısa=df.tail(30)
-                    temel={
-                        "FK": info.get('trailingPE', 'Yok'),
-                        "PD/DD": info.get('priceToBook', 'Yok'),
-                        "Sektor": info.get('sector', 'Bilinmiyor')
-                    }    
+                    temel = get_temel_info(clean_symbol)
+
                     analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor)
 
                     if groq_api_key:
@@ -429,12 +426,7 @@ elif secim == "BIST30 Tarama":
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
                     
                         # Temel Analiz Verileri
-                        info = get_fast_info(clean_symbol)
-                        temel = {
-                            "FK": info.get('trailingPE', 'Yok'),
-                            "PD/DD": info.get('priceToBook', 'Yok'),
-                            "Sektor": info.get('sector', 'Bilinmiyor')
-                        }
+                        temel = get_temel_info(clean_symbol)
                         
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
