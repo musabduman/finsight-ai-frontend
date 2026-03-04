@@ -9,7 +9,7 @@ import time
 # from app import get_stock_data, get_fast_info, teknik_analiz seklinde import edilmeli
 
 
-def watchlist_sayfasi(get_stock_data, get_temel_info, teknik_analiz):
+def watchlist_sayfasi(get_stock_data, teknik_analiz):
     """
     Kullanim:
         app.py icinde:
