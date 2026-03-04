@@ -11,7 +11,7 @@ from ai.llm import Gemini, GroqDenetci
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
 
 st.sidebar.title("🤖 Kontrol Paneli")
-secim = st.sidebar.radio("Mod Seçiniz", ["Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
+secim = st.sidebar.radio("Mod Seçiniz", ["Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama","⭐ İzleme Listesi"])
 
 st.sidebar.info("""
 **Aktif Ajanlar:**
