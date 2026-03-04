@@ -52,7 +52,7 @@ def get_temel_info(symbol):
             "Kar Marji": info.get("profitMargins", "Yok"),
             "Piyasa Degeri": info.get("marketCap", "Yok"),
         }
-    except Exception:
+    except Exception as e:
         return {"FK": "Yok", "PD/DD": "Yok", "Sektor": "Bilinmiyor",
                 "Kar Marji": "Yok", "Piyasa Degeri": "Yok"}
 
