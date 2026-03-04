@@ -19,7 +19,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
             watchlist_sayfasi(get_stock_data, get_temel_info, teknik_analiz)
     """
 
-    st.subheader("⭐ İzleme Listesi")
+    st.subheader("İzleme Listesi")
     st.markdown("Takip etmek istediğin hisseleri buraya ekle, anlık durumlarını tek bakışta gör.")
 
     # ── SESSION STATE BASLAT ──────────────────────────────────────────

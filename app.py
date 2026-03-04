@@ -11,7 +11,7 @@ from ai.llm import Gemini, GroqDenetci
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
 
 st.sidebar.title("🤖 Kontrol Paneli")
-secim = st.sidebar.radio("Mod Seçiniz", ["⭐ İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
+secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
 
 st.sidebar.info("""
 **Aktif Ajanlar:**
@@ -457,5 +457,5 @@ elif secim == "BIST30 Tarama":
             st.balloons()
             st.success("✅ Tüm hisselerin derin yapay zeka analizi başarıyla tamamlandı! Yukarıdaki sekmeleri açarak raporları okuyabilirsiniz.")
 
-elif secim == "Izleme Listesi":
+elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
