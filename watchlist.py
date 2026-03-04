@@ -72,7 +72,7 @@ def watchlist_sayfasi(get_stock_data, get_temel_info, teknik_analiz):
         )
 
         with col_sembol:
-            st.markdown(f"### {sembol.replace('.IS','')}")
+            st.markdown({sembol.replace('.IS','')})
 
         try:
             clean_symbol, df, info = get_stock_data(sembol)
