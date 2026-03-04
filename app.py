@@ -3,7 +3,7 @@ import yfinance as yf
 import time
 import streamlit as st
 import matplotlib.pyplot as plt
-
+from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, GroqDenetci
@@ -327,6 +327,7 @@ elif secim == "Mega Tarama":
             st.info("💡 **İpucu:** Detaylı Gemini ve Groq raporu almak istediğiniz hisseyi soldaki 'Tek Hisse Analizi' menüsünden aratabilirsiniz.")
 
 elif secim == "BIST30 Tarama":
+
     st.subheader("🎯 BIST30 Sinyal Avcısı")
     st.markdown("Sadece özel indikatör sinyalleri (Ralli, Wonderkid, Erken Uyarı) üreten hisseler filtrelenir ve yapay zeka heyeti tarafından derin analize sokulur.")
 
@@ -455,3 +456,6 @@ elif secim == "BIST30 Tarama":
             analiz_bar.empty()
             st.balloons()
             st.success("✅ Tüm hisselerin derin yapay zeka analizi başarıyla tamamlandı! Yukarıdaki sekmeleri açarak raporları okuyabilirsiniz.")
+
+elif secim == "Izleme Listesi":
+            watchlist_sayfasi(get_stock_data, get_temel_info, teknik_analiz)
