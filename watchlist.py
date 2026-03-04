@@ -8,6 +8,12 @@ import time
 # app.py'deki mevcut fonksiyonlari kullanacagiz
 # from app import get_stock_data, get_fast_info, teknik_analiz seklinde import edilmeli
 
+def normalize_symbol(symbol: str):
+    tr_to_en = str.maketrans("ıiğüşöçIİĞÜŞÖÇ", "IIGUSOCIIGUSOC")
+    clean_symbol = str(symbol).translate(tr_to_en).upper().strip()
+    if not clean_symbol.endswith(".IS"):
+        clean_symbol += ".IS"
+    return clean_symbol
 
 def watchlist_sayfasi(get_stock_data, teknik_analiz):
     """
@@ -39,8 +45,6 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
     with col_btn:
         if st.button("➕ Ekle", use_container_width=True):
             if yeni_hisse:
-                # normalize et
-                from app import normalize_symbol
                 temiz = normalize_symbol(yeni_hisse)
                 if temiz not in st.session_state.watchlist:
                     st.session_state.watchlist.append(temiz)
