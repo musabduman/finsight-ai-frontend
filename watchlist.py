@@ -76,7 +76,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
         )
 
         with col_sembol:
-            st.markdown({sembol.replace('.IS','')})
+            st.subheader({sembol.replace('.IS','')})
 
         try:
             clean_symbol, df, info = get_stock_data(sembol)
