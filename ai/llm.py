@@ -83,6 +83,15 @@ class Gemini(BaseLLM):
         • VOLATİLİTE: Yüksekse stop seviyesini biraz daha geniş tut, düşükse dar tut.
         • Eğer fiyat SMA50 ve SMA200'ün üzerinde ve MACD değeri pozitif ise, MACD_signal -1 olsa bile ana yön POZİTİF kabul edilir.
         
+        NOT — KARAR VERİRKEN:
+        -"TUT" kararını son çare olarak kullan. Veriler genel olarak pozitifse 
+            direkt "AL" demekten çekinme, piyasa her zaman mükemmel olmaz.
+        - Eğer yatırımcının elinde bu hisse olmayabilir. Bu yüzden "TUT" diyorsan 
+            parantez içinde şunu belirt: (Elinde varsa tut, yoksa giriş için daha 
+            net sinyal bekle)
+        - Kar marjı negatif olan şirketlerde bunu SON KARAR'da tek cümleyle 
+            mutlaka belirt.
+
         GÖREVİN:
         Tüm verileri (Temel + Teknik + Haber) birleştir. Teknik veriler "AL" derken Haberler "KÖTÜ" ise güven skorunu düşür. Çelişkileri belirt.
 
@@ -108,7 +117,7 @@ class Gemini(BaseLLM):
         (Göstergeler uyumlu mu? Hangi indikatör en baskın sinyali veriyor?)
 
         📌 SON KARAR:
-        (GÜÇLÜ AL / AL / TUT / SAT / GÜÇLÜ SAT) NOT:TUT seçeneğini daha az tercih et eğer tut diyeceksen elde olmadığı durumunu da düşün!!
+        (GÜÇLÜ AL / AL / TUT / SAT / GÜÇLÜ SAT) 
         
         ÖNEMLİ: Yaptıgın son yorumda "Neden?" sorusuna 1 cümle ile cevap ver. 
         Terimlere boğma.  
