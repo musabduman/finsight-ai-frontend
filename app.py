@@ -185,38 +185,38 @@ if secim== "Tek Hisse Analizi":
                     st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
                     analiz_sonucu=""
 
-                    my_bar.progress(100, text="Yorum Tamamlandı!")
-                    time.sleep(0.5)
-                    my_bar.empty()
+                my_bar.progress(100, text="Yorum Tamamlandı!")
+                time.sleep(0.5)
+                my_bar.empty()
 
-                    # --- GRAFİK KISMI ---
-                    # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
-                    # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
-                    st.subheader(f"📊 {clean_symbol} Analiz Paneli")
-                    grafik_listesi = df['Close'].tolist() 
-                    st.line_chart(grafik_listesi)
+                # --- GRAFİK KISMI ---
+                # LargeUtf8 hatasından kurtulmak için veriyi saf listeye çeviriyoruz
+                # Bu sayede Arrow paketleme sistemini tamamen devre dışı bırakırız
+                st.subheader(f"📊 {clean_symbol} Analiz Paneli")
+                grafik_listesi = df['Close'].tolist() 
+                st.line_chart(grafik_listesi)
 
-                    # --- METRİKLER (NaN Korumalı) ---
-                    son_fiyat = float(df['Close'].iloc[-1])
-                    rsi_deger = float(df['RSI'].iloc[-1])
-                                    
-                    c1,c2,c3,c4=st.columns(4)
-                    son_fiyat=df['Close'].iloc[-1]
-                    c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
-                    c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
-                    c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
-                    c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
-                
-                    tab1,tab2,tab3=st.tabs(["📄 Uzun Vadeli Rapor", "🚀 Agresif Yorum", "🧮 Veri Tablosu"])
-                    with tab1:
-                        st.markdown(analiz_sonucu)
-                    with tab2:
-                        if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
-                            st.error(agresif_yorum)
-                        else:
-                            st.success(agresif_yorum)
-                    with tab3:
-                        st.dataframe(df.tail(10))
+                # --- METRİKLER (NaN Korumalı) ---
+                son_fiyat = float(df['Close'].iloc[-1])
+                rsi_deger = float(df['RSI'].iloc[-1])
+                                
+                c1,c2,c3,c4=st.columns(4)
+                son_fiyat=df['Close'].iloc[-1]
+                c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
+                c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
+                c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
+                c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
+            
+                tab1,tab2,tab3=st.tabs(["📄 Uzun Vadeli Rapor", "🚀 Agresif Yorum", "🧮 Veri Tablosu"])
+                with tab1:
+                    st.markdown(analiz_sonucu)
+                with tab2:
+                    if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
+                        st.error(agresif_yorum)
+                    else:
+                        st.success(agresif_yorum)
+                with tab3:
+                    st.dataframe(df.tail(10))
 
 elif secim == "Mega Tarama":
     st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
