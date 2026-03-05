@@ -108,7 +108,7 @@ class Gemini(BaseLLM):
         (Göstergeler uyumlu mu? Hangi indikatör en baskın sinyali veriyor?)
 
         📌 SON KARAR:
-        (GÜÇLÜ AL / AL / TUT / SAT / GÜÇLÜ SAT)
+        (GÜÇLÜ AL / AL / TUT / SAT / GÜÇLÜ SAT) NOT:TUT seçeneğini daha az tercih et eğer tut diyeceksen elde olmadığı durumunu da düşün!!
         
         ÖNEMLİ: Yaptıgın son yorumda "Neden?" sorusuna 1 cümle ile cevap ver. 
         Terimlere boğma.  
