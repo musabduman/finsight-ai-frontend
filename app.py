@@ -332,31 +332,77 @@ elif secim == "BIST30 Tarama":
     st.markdown("Sadece özel indikatör sinyalleri (Ralli, Wonderkid, Erken Uyarı) üreten hisseler filtrelenir ve yapay zeka heyeti tarafından derin analize sokulur.")
 
     def sinyal_kontrol(df):
-        
         try:
             son = df.iloc[-1]
-            # Not: Bu sütunların (Width, Signal, MACD_signal vb.) teknik_analiz(df) içinde hesaplandığından emin olun!
-            wonderkid = (son.get('Width', 1) < 0.15) and (son.get('RSI', 50) < 60)
-            erken_uyari = (
-                (son.get('MACD_signal', 0) == 1) and
-                (son.get('BOLL_signal', 0) == 1)
-            )
+            # Float karşılaştırma güvenli yardımcı fonksiyon
+            def sig(key, default=0):
+                val = son.get(key, default)
+                try:
+                    return int(float(val))
+                except:
+                    return default
+            def val(key, default=0):
+                v = son.get(key, default)
+                try:
+                    return float(v)
+                except:
+                    return default
+            macd_sig    = sig('MACD_signal')
+            boll_sig    = sig('BOLL_signal')
+            vol_sig     = sig('VOLUME_signal')
+            rsi         = val('RSI', 50)
+            width       = val('Width', 1)
+            macd_val    = val('MACD', 0)
+            fiyat       = val('Close', 0)
+            sma50       = val('SMA_50', 0)
+            sma200      = val('SMA_200', 0)
 
+            # --- SİNYAL TANIMLARI ---
+            # 🚀 Ralli: Momentum + Hacim + Bollinger onayı
             ralli = (
-                (son.get('MACD_signal', 0) == 1) and
-                (son.get('BOLL_signal', 0) == 1) and
-                (son.get('VOLUME_signal', 0) == 1)
+                macd_sig == 1 and
+                boll_sig == 1 and
+                vol_sig == 1
             )
-
+            # 💎 Wonderkid: Sıkışma + Patlama beklentisi (eşik gevşetildi)
+            wonderkid = (
+                width < 0.25 and
+                rsi < 65 and
+                macd_val > 0  # Ana trend pozitif olsun
+            )
+            # ⚠️ Erken Uyarı: MACD dönüyor + ya Bollinger ya Hacim onayı
+            erken_uyari = (
+                macd_sig == 1 and
+                (boll_sig == 1 or vol_sig == 1)
+            )
+            # 📈 Trend Takipçi (YENİ): Fiyat her iki ortalamanın üstünde + RSI güçlü
+            trend_takipci = (
+                fiyat > sma50 and
+                fiyat > sma200 and
+                rsi > 50 and rsi < 75 and
+                macd_val > 0
+            )
+            # 🔄 RSI Dip Dönüşü (YENİ): Aşırı satımdan çıkış
+            rsi_donus = (
+                rsi < 45 and
+                macd_sig == 1  # Momentum dönüyor
+            )
+            # Öncelik sırasına göre sinyal döndür
             if ralli:
                 return True, "🚀 Ralli Modu"
             elif wonderkid:
-                return True, "💎 Wonderkid Modu"
+                return True, "💎 Wonderkid (Sıkışma)"
+            elif trend_takipci:
+                return True, "📈 Trend Takipçi"
             elif erken_uyari:
                 return True, "⚠️ Erken Uyarı"
+            elif rsi_donus:
+                return True, "🔄 RSI Dip Dönüşü"
+            
             return False, "Temiz"
-        except KeyError as e:
-            return False, f"Eksik bilgi indikatör verisi: {e}"
+
+        except Exception as e:
+            return False, f"Hata: {e}"
 
     bist30_hisseler = [
         "AKBNK", "ALARK", "ARCLK", "ASELS", "ASTOR", "BIMAS", "BRSAN", "CCOLA", 
