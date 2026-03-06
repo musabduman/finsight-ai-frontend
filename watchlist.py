@@ -16,21 +16,16 @@ def normalize_symbol(symbol: str):
     return clean_symbol
 
 def watchlist_sayfasi(get_stock_data, teknik_analiz):
-    """
-    Kullanim:
-        app.py icinde:
-        from watchlist_page import watchlist_sayfasi
-        ...
-        elif secim == "Izleme Listesi":
-            watchlist_sayfasi(get_stock_data, get_temel_info, teknik_analiz)
-    """
 
     st.subheader("İzleme Listesi")
     st.markdown("Takip etmek istediğin hisseleri buraya ekle, anlık durumlarını tek bakışta gör.")
 
     # ── SESSION STATE BASLAT ──────────────────────────────────────────
     if "watchlist" not in st.session_state:
-        st.session_state.watchlist = []   # ["THYAO.IS", "GARAN.IS", ...]
+        st.session_state.watchlist = ["AKBNK", "ALARK", "ARCLK", "ASELS", "ASTOR", "BIMAS", "BRSAN", "CCOLA", 
+        "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "HEKTS", "ISCTR", 
+        "KCHOL", "KONTR", "KRDMD", "OYAKC", "PETKM", "PGSUS", 
+        "SAHOL", "SASA", "SISE", "TCELL", "THYAO", "TOASO", "TUPRS", "YKBNK"]   # ["THYAO.IS", "GARAN.IS", ...]
 
     # ── HISSE EKLEME FORMU ───────────────────────────────────────────
     col_ekle, col_btn = st.columns([4, 1])
