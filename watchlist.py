@@ -19,7 +19,7 @@ def normalize_symbol(symbol: str):
 def watchlist_sayfasi(get_stock_data, teknik_analiz):
     BIST30_HISSELER = [
         "AKBNK","ARCLK","ASELS","BIMAS","EKGYO","EREGL","FROTO","GARAN",
-        "HEKTS","ISCTR","KCHOL","KOZAA","KOZAL","KRDMD","MGROS","ODAS",
+        "HEKTS","ISCTR","KCHOL","KRDMD","MGROS","ODAS",
         "PETKM","PGSUS","SAHOL","SASA","SISE","TAVHL","TCELL","THYAO",
         "TKFEN","TOASO","TTKOM","TUPRS","VAKBN","YKBNK"
     ]
@@ -86,7 +86,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
                 macd_val    = float(df['MACD'].iloc[-1]) if 'MACD' in df.columns else 0
                 macd_signal = int(df['MACD_signal'].iloc[-1]) if 'MACD_signal' in df.columns else 0
 
-                ok = "▲" if degisim_yuz >= 0 else "▼"
+                ok = "🟢" if degisim_yuz >= 0 else "🔴"
 
                 if rsi_degeri < 30:   rsi_label = "🟢"
                 elif rsi_degeri > 70: rsi_label = "🔴"
