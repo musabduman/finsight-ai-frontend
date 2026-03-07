@@ -1,8 +1,10 @@
+import time
+
 import pandas as pd
 import yfinance as yf
-import time
 import streamlit as st
 import matplotlib.pyplot as plt
+
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
