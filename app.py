@@ -160,8 +160,9 @@ if secim== "Tek Hisse Analizi":
 
                 try:
                     my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
-                    df=teknik_analiz(df)
+                    df, fib_20, fib_200=teknik_analiz(df)
                     
+                    son_sbs = df['SBS'].iloc[-1]
                     # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
                     # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
                     df = df.ffill().bfill().fillna(0) # NaN'ları doldur
@@ -183,12 +184,12 @@ if secim== "Tek Hisse Analizi":
                     df_kısa=df.tail(30)
                     temel = get_temel_hesapla(clean_symbol)
 
-                    analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor)
+                    analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor, fib_200, son_sbs)
 
                     if groq_api_key:
                         my_bar.progress(90, text="Groq analizi denetliyor...")
                         groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-                        agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor)
+                        agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor, fib_20, son_sbs)
                     else:
                         # Groq yoksa direkt Gemini sonucunu bas
                         agresif_yorum="ℹ️ Groq API anahtarı girilmediği için agresif yorum pasif."
@@ -212,13 +213,16 @@ if secim== "Tek Hisse Analizi":
                 son_fiyat = float(df['Close'].iloc[-1])
                 rsi_deger = float(df['RSI'].iloc[-1])
                                 
-                c1,c2,c3,c4=st.columns(4)
+                c1,c2,c3,c4,c5=st.columns(4)
                 son_fiyat=df['Close'].iloc[-1]
                 c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
                 c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
                 c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                 c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
-            
+                # YENİ EKLENEN SBS METRİĞİ
+                sbs_delta = "Baskı Pozitif" if son_sbs > 50 else "-Baskı Negatif"
+                c5.metric("Alım Baskısı (SBS)", f"%{son_sbs:.1f}", sbs_delta)
+                
                 tab1,tab2,tab3=st.tabs(["📄 Uzun Vadeli Rapor", "🚀 Agresif Yorum", "🧮 Veri Tablosu"])
                 with tab1:
                     st.markdown(analiz_sonucu)
@@ -262,7 +266,8 @@ elif secim == "Mega Tarama":
             
             try:
                 # Teknik analiz verilerini hesapla
-                df = teknik_analiz(df)
+                df, fib_20, fib_200 = teknik_analiz(df)
+                son_sbs = df['SBS'].iloc[-1]
                 df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
                 
                 # PyTorch (Kahin) Tahmini
@@ -443,7 +448,8 @@ elif secim == "BIST30 Tarama":
             clean_symbol, df, info = get_stock_data(sembol)
             
             try:
-                df = teknik_analiz(df)
+                df, fib_20, fib_200 = teknik_analiz(df)
+                son_sbs = df['SBS'].iloc[-1]
                 sinyal_var_mi, mesaj = sinyal_kontrol(df)
                 
                 # Eğer sinyal varsa, derin analiz için listeye ekle
@@ -489,15 +495,19 @@ elif secim == "BIST30 Tarama":
                         
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
-                        analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor)
-                        agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor)
+                        analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor, fib_200, son_sbs)
+                        agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor,fib_20, son_sbs)
                         
                         # Metrikleri Göster
-                        c1, c2, c3, c4 = st.columns(4)
+                        c1, c2, c3, c4, c5 = st.columns(4)
                         c1.metric("Son Fiyat", f"{df['Close'].iloc[-1]:.2f}₺")
                         c2.metric("Durum", mesaj)
                         c3.metric("Kahin (DL) Hedef", f"{sonuc_dl.get('tahmin', 0)}₺")
                         c4.metric("Kahin Güveni", f"%{sonuc_dl.get('güven', 0)}")
+                        
+                        # YENİ EKLENEN SBS METRİĞİ
+                        sbs_delta = "Baskı Pozitif" if son_sbs > 50 else "-Baskı Negatif"
+                        c5.metric("Alım Baskısı (SBS)", f"%{son_sbs:.1f}", sbs_delta)
                         
                         # Raporları Sekmeler Halinde Göster
                         tab1, tab2 = st.tabs(["📄 Analist (Gemini)", "🛡️ Denetçi (Groq)"])

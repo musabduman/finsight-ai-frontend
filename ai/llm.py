@@ -29,7 +29,7 @@ class Gemini(BaseLLM):
         bu periyotlardaki olası dönüşleri hatırlat.
         """
     
-    def build_prompt(self,sembol,temel,df,haberler_listesi,ai_rapor):
+    def build_prompt(self,sembol,temel,df,haberler_listesi,ai_rapor, fib_200, sbs):
 
         son_veriler = df.tail(20).to_string() if not df.empty else "Yeterli veri yok."
         
@@ -47,7 +47,17 @@ class Gemini(BaseLLM):
             temel_metin = "\n".join([f"- {k}: {v}" for k, v in temel.items()])
         else:
             temel_metin = "Temel veri bulunamadı."
-
+        
+        matematiksel_gerceklik = f"""
+        5. MATEMATİKSEL BASKI VE ANA TREND (BUNU KESİNLİKLE DİKKATE AL):
+        - Sentetik Alım-Satım Baskısı (SBS): %{sbs} (50 üstü alım, altı satım baskısıdır)
+        - 200 Günlük Ana Trend (Fibonacci):
+          * Zirve: {fib_200['fib_high']}
+          * Dip: {fib_200['fib_low']}
+          * Altın Oran (0.618): {fib_200['fib_618']}
+        (Not: Eğer SBS %70 üzerindeyse trend güçlüdür, 200 günlük dirençlere doğru hareket beklenir.)
+        """
+        
         return f"""Sen dünyanın en iyi hedge fonlarında çalışan bir borsa uzmanısın. 
         Sen karşındaki kişinin yatırım asistanısın; samimi, abartısız ve net bir dil kullanabilirsin (arkadaşça ama profesyonel). Sakın yatırım tavsiyesi verme sadece elindeki bilgileri yorumla !
         
@@ -69,6 +79,10 @@ class Gemini(BaseLLM):
         4. Aİ BOTU YARDIMI:
         {ai_rapor}
         (bu rapor tamamen sayısal verilerle hesaplanmıştır bunU AYNEN YAZDIR ve yorumunda kullan!)
+
+        5. MATEMATİKSEL HESAPLAR:    
+        {matematiksel_gerceklik}
+        (Bu hesaplar hedef fiyat belirlemen ve alım/satım oranı ile yorumunu gerçekliğe daha da yakınlaştırmak için yapılmıştır.)
 
         KARAR MEKANİZMAN (Bu kurallara sadık kal):
         • RSI: <30 (Aşırı Ucuz/Al Fırsatı), >70 (Aşırı Pahalı/Sat Fırsatı), 30-70 (Nötr/Trendi Takip Et).
@@ -163,7 +177,7 @@ class GroqDenetci(BaseLLM):
         - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir[cite: 110, 118].
         """
     
-    def build_prompt(self,df,analiz_sonucu,ai_rapor):
+    def build_prompt(self,df,analiz_sonucu,ai_rapor, fib_20, sbs):
         
         def safe_get(series, key, default="Yok"):
             try:
@@ -186,6 +200,8 @@ class GroqDenetci(BaseLLM):
         BOLL Width: {safe_get(son_veri, 'Width', 0)}
         VOLUME_SIGNAL: {safe_get(son_veri, 'Volume_signal', 'Yok')}
         Volatilite: {safe_get(son_veri, 'Volatility', 'Yok')}
+        SBS_SKORU: {sbs}
+        FIBONACCI_20_HEDEF (0.618): {fib_20['fib_618']}
         """
         
         # --- GÜNCELLENMİŞ GROQ PROMPTU ---
@@ -203,17 +219,12 @@ class GroqDenetci(BaseLLM):
             - Zayıf ama potansiyelli hisselerde “RİSKLİ AL” ifadesini kullan.
 
             Kullandığın ana göstergeler:
-            - RSI
-            - MACD
-            - MACD_signal
-            - SMA 20 / SMA 50
-            - Bollinger Band Width
-            - Hacim (Volume & Volume Signal)
-            - Volatilite
-            - Pivot seviyeleri
-            - Ai raporu {ai_rapor}
+            - Sentetik Baskı Skoru (SBS): {sbs} (En önemli momentum göstergen budur! 70 üstü füzeye bin demektir.)
+            - 20 Günlük Kısa Vade Fibonacci Hedefi: {fib_20['fib_618']}
+            - RSI, MACD, MACD_signal, SMA 20 / SMA 50, Bollinger Band Width, Hacim, Volatilite, Pivot seviyeleri, {ai_rapor}
+
             Karar Mantığı:
-            - MACD pozitif ve hacim artışı varsa agresif AL.
+            - SBS %70 üzerinde ve hacim artışı varsa agresif AL.
             - Bollinger sıkışması + hacim artışı → KIRILIM BEKLENTİSİ (AL veya RİSKLİ AL DİĞER VERİLERDE İYİ DURUMDAYSA).
             - RSI 55–80 bandında ve fiyat SMA20 üzerinde ise momentum pozitif kabul edilir.
             - MACD_signal negatif olsa bile MACD pozitifse bu durumu "dinlenme" olarak değerlendir, skoru sert düşürme.

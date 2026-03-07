@@ -50,25 +50,76 @@ class TechnicalAnalyzer:
         self.df['S1'] = (2 * self.df['Pivot']) - self.df['High']
         return self.df
 
+    def calculate_fibonacci_levels(self, period=20):
+        recent_df = self.df.tail(period)
+        high = recent_df['High'].max()
+        low = recent_df['Low'].min()
+        diff = high - low
+        
+        return {
+            "fib_high": round(high, 2),
+            "fib_low": round(low, 2),
+            "fib_618": round(high - 0.382 * diff, 2), 
+            "fib_382": round(high - 0.618 * diff, 2)
+        }
+
+    # 2. Vektörel SBS Hesaplama (Satır satır değil, tek seferde hesaplar!)
+    def calculate_sbs_vectorized(self):
+        # Yüzdelik değişimi tam sayı formatında al (Örn: 0.03 yerine 3.0)
+        self.df['Percent_Change'] = self.df['Close'].pct_change() * 100
+        
+        # Fiyat Skoru (FS)
+        fs = 50 + (self.df['Percent_Change'] * 7.14)
+        fs = fs.clip(0, 100) # max ve min sınırlandırması
+        
+        # Hacim Skoru (VS)
+        vol_avg = self.df['Volume'].rolling(window=20).mean()
+        hacim_orani = self.df['Volume'] / vol_avg
+        yon = np.where(self.df['Percent_Change'] >= 0, 1, -1)
+        
+        vs = 50 + ((hacim_orani - 1) * 25 * yon)
+        vs = vs.clip(0, 100)
+        
+        # MFI (Para Akışı). Eğer kodunda MFI yoksa, RSI'ı proxy (vekil) olarak kullanabiliriz.
+        # Daha sonra gerçek MFI eklersen burayı self.df['MFI'] yaparsın.
+        mfi_proxy = self.df['RSI'] 
+        
+        # Final SBS Skoru
+        self.df['SBS'] = (mfi_proxy * 0.40) + (fs * 0.40) + (vs * 0.20)
+        self.df['SBS'] = self.df['SBS'].round(2)
+        
+        return self.df
     def teknik_baslat(self):
+        
         delta = self.df['Close'].diff()
         gain = (delta.where(delta > 0, 0))
         lose = (-delta.where(delta < 0, 0))
         avg_gain = gain.ewm(com=13, adjust=False).mean()
         avg_lose = lose.ewm(com=13, adjust=False).mean()
         rs = avg_gain / avg_lose
-
         self.df['RSI'] = 100 - (100 / (1 + rs))
+        
         self.df['SMA_50'] = self.df['Close'].rolling(window=50).mean()
         self.df['SMA_200'] = self.df['Close'].rolling(window=200).mean()
         self.df['SMA_20'] = self.df['Close'].rolling(window=20).mean() 
+        
         self.df['Volume_signal'] = self.volume_trend(window=60)
         self.df['Volatility'] = self.calcu_volatility(window=20)
-        self.df = self.bollinger(window=20)
-        self.df = self.calcu_macd()
-        self.df = self.calcu_pivot()
         
-        return self.df.dropna()
+        self.bollinger(window=20)
+        self.calcu_macd()
+        self.calcu_pivot()
+        
+        self.calculate_sbs_vectorized()
+
+        # NaN verileri temizle
+        self.df = self.df.dropna()
+        
+        # Fibonacci seviyelerini (son güncel duruma göre) hesapla
+        fib_20 = self.calculate_fibonacci_levels(period=20)
+        fib_200 = self.calculate_fibonacci_levels(period=200)
+
+        return self.df.dropna(), fib_20, fib_200
     
 def teknik_analiz(df):
     analizor = TechnicalAnalyzer(df)
