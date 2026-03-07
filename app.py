@@ -154,6 +154,7 @@ if secim== "Tek Hisse Analizi":
                 my_bar=st.progress(0, text=progress_text)
 
                 clean_symbol, df, info= get_stock_data(sembol_input)
+                
                 if  df is None or df.empty:
                         st.error("Veri çekilemediği için analize devam edilemiyor. Lütfen biraz bekleyip tekrar deneyin.")
                         st.stop()
@@ -219,6 +220,7 @@ if secim== "Tek Hisse Analizi":
                 c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
                 c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                 c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
+                
                 # YENİ EKLENEN SBS METRİĞİ
                 sbs_delta = "Baskı Pozitif" if son_sbs > 50 else "-Baskı Negatif"
                 c5.metric("Alım Baskısı (SBS)", f"%{son_sbs:.1f}", sbs_delta)
@@ -364,15 +366,15 @@ elif secim == "BIST30 Tarama":
                     return float(v)
                 except:
                     return default
-            macd_sig    = sig('MACD_signal')
-            boll_sig    = sig('BOLL_signal')
-            vol_sig     = sig('VOLUME_signal')
-            rsi         = val('RSI', 50)
-            width       = val('Width', 1)
-            macd_val    = val('MACD', 0)
-            fiyat       = val('Close', 0)
-            sma50       = val('SMA_50', 0)
-            sma200      = val('SMA_200', 0)
+            macd_sig=sig('MACD_signal')
+            boll_sig=sig('BOLL_signal')
+            vol_sig=sig('VOLUME_signal')
+            rsi=val('RSI', 50)
+            width=val('Width', 1)
+            macd_val= val('MACD', 0)
+            fiyat= val('Close', 0)
+            sma50= val('SMA_50', 0)
+            sma200= val('SMA_200', 0)
 
             # --- SİNYAL TANIMLARI ---
             # 🚀 Ralli: Momentum + Hacim + Bollinger onayı
@@ -449,7 +451,7 @@ elif secim == "BIST30 Tarama":
             
             try:
                 df, fib_20, fib_200 = teknik_analiz(df)
-                son_sbs = df['SBS'].iloc[-1]
+                
                 sinyal_var_mi, mesaj = sinyal_kontrol(df)
                 
                 # Eğer sinyal varsa, derin analiz için listeye ekle
@@ -480,6 +482,8 @@ elif secim == "BIST30 Tarama":
                         
                         # PyTorch Sayısal Tahmin
                         df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
+                        son_sbs = df['SBS'].iloc[-1]
+                        
                         if len(df_muhasebeci) < 50:
                             sonuc_dl = {'yön': 'Veri Yetersiz', 'tahmin': 0, 'güven': 0}
                         else:
