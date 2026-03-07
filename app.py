@@ -385,20 +385,20 @@ elif secim == "BIST30 Tarama":
                 macd_sig == 1 and
                 boll_sig == 1 and
                 vol_sig == 1 and
-                sbs >= 65
+                sbs >= 55
             )
             # 💎 Wonderkid: Sıkışma + Patlama beklentisi (eşik gevşetildi)
             wonderkid = (
                 width < 0.25 and
                 rsi < 65 and
                 macd_val > 0 and
-                sbs > 55  # Ana trend pozitif olsun
+                sbs > 45  # Ana trend pozitif olsun
             )
             # ⚠️ Erken Uyarı: MACD dönüyor + ya Bollinger ya Hacim onayı
             erken_uyari = (
                 macd_sig == 1 and
                 (boll_sig == 1 or vol_sig == 1) and
-                sbs > 50
+                sbs > 40
             )
             # 📈 Trend Takipçi (YENİ): Fiyat her iki ortalamanın üstünde + RSI güçlü
             trend_takipci = (
@@ -406,13 +406,13 @@ elif secim == "BIST30 Tarama":
                 fiyat > sma200 and
                 rsi > 50 and rsi < 75 and
                 macd_val > 0 and
-                sbs >= 60
+                sbs >= 50
             )
             # 🔄 RSI Dip Dönüşü (YENİ): Aşırı satımdan çıkış
             rsi_donus = (
                 rsi < 45 and
                 macd_sig == 1 and
-                sbs > 45    # Momentum dönüyor
+                sbs > 35    # Momentum dönüyor
             )
             # 🔥 Agresif Para Girişi: Sadece devasa alım baskısı ve hacim (Bonus)
             sbs_patlama = (
