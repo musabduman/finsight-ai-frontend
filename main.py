@@ -119,7 +119,7 @@ def muhasebeci(hisse,bot=deeplearning):
     except Exception as e:
         return f"Deeplearning'de hata: {e}"
 
-def mod_tekli_detayli(gemini_bot, ollama_bot,dl_bot):
+def mod_tekli_detayli(gemini_bot, dl_bot):
     """MOD 1: Tek bir hisse için baştan sona analiz."""
     hisse, sembol, df = input_alma()
     
@@ -139,16 +139,14 @@ def mod_tekli_detayli(gemini_bot, ollama_bot,dl_bot):
 
         print("\nYapay Zekalar Yorumluyor, lütfen bekleyin...\n")
         analiz_sonucu = gemini_bot(sembol, temel, df, haberler, ai_rapor)
-        denetleme=ollama_bot(df, analiz_sonucu)
         print("="*60)
         print(f"BÜYÜK RESİM (OLLAMA + GEMİNİ): \n{analiz_sonucu}", flush=True)
         print("="*60)
-        print(f"DENETLEME {denetleme}", flush=True)
         
     except Exception as e:
         print(f"Analiz sırasında beklenmeyen hata: {e}")
 
-def mod_bist30_tarama(gemini_bot, ollama_bot, dl_bot):
+def mod_bist30_tarama(gemini_bot,dl_bot):
     """MOD 2: BIST30 içinde fırsat veren hisseleri tarar."""
     print("\nBIST 30 Taraması Başlıyor...")
     firsat_listesi = []
@@ -182,12 +180,10 @@ def mod_bist30_tarama(gemini_bot, ollama_bot, dl_bot):
         ai_rapor = muhasebeci(hisse, dl_bot)
         
         analiz_sonucu = gemini_bot(sembol, temel, df, haberler, ai_rapor)
-        denetleme=ollama_bot(df, analiz_sonucu)
         
         print(50*'*')
         print(analiz_sonucu, flush=True)
         print(50*'*')
-        print(f"DENETLEME {denetleme}", flush=True)
         time.sleep(15) # API limitlerine takılmamak için
 
 def mod_mega_tarama(dl_bot):
@@ -233,7 +229,7 @@ class DummyOllama:
 def main(): 
     gemini_yorumla=Gemini(api_key=GOOGLE_API_KEY)
     dl_bot=deeplearning()
-    ollama_bot=OllamaLLM(model="gemma3:4b")
+
 
     while True:
         print("\n" + "="*40)
@@ -252,9 +248,9 @@ def main():
             print("Sistemden çıkılıyor. Bol kazançlar!")
             break
         elif secim == "1":
-            mod_tekli_detayli(gemini_yorumla,ollama_bot, dl_bot)        
+            mod_tekli_detayli(gemini_yorumla, dl_bot)        
         elif secim == "2":
-            mod_bist30_tarama(gemini_yorumla,ollama_bot, dl_bot)
+            mod_bist30_tarama(gemini_yorumla, dl_bot)
         elif secim == "3":
             hisse, sembol, df = input_alma()
             ai_rapor = muhasebeci(hisse, dl_bot)
