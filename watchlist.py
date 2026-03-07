@@ -76,7 +76,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
             if df is None or df.empty:
                 row.update({"Fiyat": "-", "Değişim %": "-", "RSI": "-", "Durum": "Veri yok"})
             else:
-                df = teknik_analiz(df)
+                df, fib_20, fib_200 = teknik_analiz(df)
                 df = df.ffill().bfill().fillna(0)
 
                 son_fiyat   = float(df['Close'].iloc[-1])
