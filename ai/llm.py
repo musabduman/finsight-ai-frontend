@@ -184,7 +184,7 @@ class GroqDenetci(BaseLLM):
         SMA200: {safe_get(son_veri, 'SMA_200', 0)}
         Fiyat: {safe_get(son_veri, 'Close', 0)}
         BOLL Width: {safe_get(son_veri, 'Width', 0)}
-        VOLUME_SIGNAL: {safe_get(son_veri, 'VOLUME_signal', 'Yok')}
+        VOLUME_SIGNAL: {safe_get(son_veri, 'Volume_signal', 'Yok')}
         Volatilite: {safe_get(son_veri, 'Volatility', 'Yok')}
         """
         

@@ -6,6 +6,7 @@ class TechnicalAnalyzer:
 
     def bollinger(self, window=20):
         self.df['SMA'] = self.df['Close'].rolling(window=20).mean()
+        
         std = self.df['Close'].rolling(window=window).std()
         self.df['Upper'] = self.df['SMA'] + 2 * std
         self.df['Lower'] = self.df['SMA'] - 2 * std
@@ -60,6 +61,7 @@ class TechnicalAnalyzer:
         self.df['RSI'] = 100 - (100 / (1 + rs))
         self.df['SMA_50'] = self.df['Close'].rolling(window=50).mean()
         self.df['SMA_200'] = self.df['Close'].rolling(window=200).mean()
+        self.df['SMA_20'] = self.df['Close'].rolling(window=20).mean() 
         self.df['Volume_signal'] = self.volume_trend(window=60)
         self.df['Volatility'] = self.calcu_volatility(window=20)
         self.df = self.bollinger(window=20)

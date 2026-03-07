@@ -1,6 +1,6 @@
 numpy==1.26.4
 pandas==2.0.3
-yfinance
+yfinance==0.2.51
 torch==2.1.2
 scikit-learn
 python-dotenv
