@@ -361,11 +361,14 @@ elif secim == "BIST30 Tarama":
                 except:
                     return default
             def val(key, default=0):
+                
                 v = son.get(key, default)
                 try:
                     return float(v)
                 except:
                     return default
+            
+            sbs = df['SBS'].iloc[-1]
             macd_sig=sig('MACD_signal')
             boll_sig=sig('BOLL_signal')
             vol_sig=sig('VOLUME_signal')
@@ -381,31 +384,42 @@ elif secim == "BIST30 Tarama":
             ralli = (
                 macd_sig == 1 and
                 boll_sig == 1 and
-                vol_sig == 1
+                vol_sig == 1 and
+                sbs >= 65
             )
             # 💎 Wonderkid: Sıkışma + Patlama beklentisi (eşik gevşetildi)
             wonderkid = (
                 width < 0.25 and
                 rsi < 65 and
-                macd_val > 0  # Ana trend pozitif olsun
+                macd_val > 0 and
+                sbs > 55  # Ana trend pozitif olsun
             )
             # ⚠️ Erken Uyarı: MACD dönüyor + ya Bollinger ya Hacim onayı
             erken_uyari = (
                 macd_sig == 1 and
-                (boll_sig == 1 or vol_sig == 1)
+                (boll_sig == 1 or vol_sig == 1) and
+                sbs > 50
             )
             # 📈 Trend Takipçi (YENİ): Fiyat her iki ortalamanın üstünde + RSI güçlü
             trend_takipci = (
                 fiyat > sma50 and
                 fiyat > sma200 and
                 rsi > 50 and rsi < 75 and
-                macd_val > 0
+                macd_val > 0 and
+                sbs >= 60
             )
             # 🔄 RSI Dip Dönüşü (YENİ): Aşırı satımdan çıkış
             rsi_donus = (
                 rsi < 45 and
-                macd_sig == 1  # Momentum dönüyor
+                macd_sig == 1 and
+                sbs > 45    # Momentum dönüyor
             )
+            # 🔥 Agresif Para Girişi: Sadece devasa alım baskısı ve hacim (Bonus)
+            sbs_patlama = (
+                sbs >= 70 and
+                vol_sig == 1
+            )
+
             # Öncelik sırasına göre sinyal döndür
             if ralli:
                 return True, "🚀 Ralli Modu"
@@ -417,7 +431,8 @@ elif secim == "BIST30 Tarama":
                 return True, "⚠️ Erken Uyarı"
             elif rsi_donus:
                 return True, "🔄 RSI Dip Dönüşü"
-            
+            elif sbs_patlama:
+                return True, "🚀 Alım/Satım oranı yükseldi"
             return False, "Temiz"
 
         except Exception as e:
@@ -450,8 +465,7 @@ elif secim == "BIST30 Tarama":
             clean_symbol, df, info = get_stock_data(sembol)
             
             try:
-                df, fib_20, fib_200 = teknik_analiz(df)
-                
+                df, fib_20, fib_200 = teknik_analiz(df)                
                 sinyal_var_mi, mesaj = sinyal_kontrol(df)
                 
                 # Eğer sinyal varsa, derin analiz için listeye ekle
@@ -483,7 +497,7 @@ elif secim == "BIST30 Tarama":
                         # PyTorch Sayısal Tahmin
                         df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
                         son_sbs = df['SBS'].iloc[-1]
-                        
+
                         if len(df_muhasebeci) < 50:
                             sonuc_dl = {'yön': 'Veri Yetersiz', 'tahmin': 0, 'güven': 0}
                         else:
