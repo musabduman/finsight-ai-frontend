@@ -43,20 +43,30 @@ def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
     return dict(ticker)
 
-def get_temel_info(symbol):
-    """Temel analiz verisi — FK, PD/DD, Sektör için ticker.info kullanır"""
+def get_temel_hesapla(symbol):
+    ticker = yf.Ticker(symbol)
+    
+    # Bilanço verisi
+    income = ticker.financials      # Gelir tablosu
+    balance = ticker.balance_sheet  # Bilanço
+    fast = ticker.fast_info
+    
     try:
-        info = yf.Ticker(symbol).info
+        net_kar = income.loc['Net Income'].iloc[0]
+        özkaynak = balance.loc['Stockholders Equity'].iloc[0]
+        piyasa_degeri = fast['market_cap']
+        
+        fk = piyasa_degeri / net_kar if net_kar > 0 else "Zararda"
+        pd_dd = piyasa_degeri / özkaynak if özkaynak > 0 else "Yok"
+        kar_marji = net_kar / income.loc['Total Revenue'].iloc[0]
+        
         return {
-            "FK": info.get("trailingPE", "Yok"),
-            "PD/DD": info.get("priceToBook", "Yok"),
-             "Sektor": info.get("sector", "Bilinmiyor"),
-            "Kar Marji": info.get("profitMargins", "Yok"),
-            "Piyasa Degeri": info.get("marketCap", "Yok"),
+            "FK": round(fk, 2),
+            "PD/DD": round(pd_dd, 2),
+            "Kar Marji": f"%{round(kar_marji*100, 1)}"
         }
-    except Exception as e:
-        return {"FK": "Yok", "PD/DD": "Yok", "Sektor": "Bilinmiyor",
-                "Kar Marji": "Yok", "Piyasa Degeri": "Yok"}
+    except:
+        return {"FK": "Yok", "PD/DD": "Yok", "Kar Marji": "Yok"}
 
 def get_stock_data(symbol):
     try:
@@ -171,7 +181,7 @@ if secim== "Tek Hisse Analizi":
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
                     df_kısa=df.tail(30)
-                    temel = get_temel_info(clean_symbol)
+                    temel = get_temel_hesapla(clean_symbol)
 
                     analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor)
 
@@ -475,7 +485,7 @@ elif secim == "BIST30 Tarama":
                         ai_rapor = f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
                     
                         # Temel Analiz Verileri
-                        temel = get_temel_info(clean_symbol)
+                        temel = get_temel_hesapla(clean_symbol)
                         
                         # Haberler ve LLM Raporları
                         haberler_listesi = haber_cek_web(clean_symbol)
