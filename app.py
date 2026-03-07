@@ -213,7 +213,7 @@ if secim== "Tek Hisse Analizi":
                 son_fiyat = float(df['Close'].iloc[-1])
                 rsi_deger = float(df['RSI'].iloc[-1])
                                 
-                c1,c2,c3,c4,c5=st.columns(4)
+                c1,c2,c3,c4,c5=st.columns(5)
                 son_fiyat=df['Close'].iloc[-1]
                 c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
                 c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
@@ -499,7 +499,7 @@ elif secim == "BIST30 Tarama":
                         agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor,fib_20, son_sbs)
                         
                         # Metrikleri Göster
-                        c1, c2, c3, c4, c5 = st.columns(4)
+                        c1, c2, c3, c4, c5 = st.columns(5)
                         c1.metric("Son Fiyat", f"{df['Close'].iloc[-1]:.2f}₺")
                         c2.metric("Durum", mesaj)
                         c3.metric("Kahin (DL) Hedef", f"{sonuc_dl.get('tahmin', 0)}₺")
