@@ -18,7 +18,7 @@ secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi",
 st.sidebar.info("""
 **Aktif Ajanlar:**
 * 🧠 Gemini 1.5 Flash (Analist)
-* 🛡️ Groq (Denetçi)
+* 🛡️ Groq (Agresif Analist)
 * 🧮 PyTorch (Kahin) 
 """)
 
