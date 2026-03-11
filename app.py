@@ -1,9 +1,11 @@
 import time
+import requests
 
 import pandas as pd
 import yfinance as yf
 import streamlit as st
 import matplotlib.pyplot as plt
+import auth_ui
 
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
@@ -11,6 +13,25 @@ from ai.pythorc import deeplearning
 from ai.llm import Gemini, GroqDenetci
 
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
+is_ready = auth_ui.login_sidebar()
+if not is_ready:
+    # Giriş yoksa siteyi burada durdurur, aşağıdaki arayüz kodlarını HİÇ OKUMAZ.
+    st.info("🚀 Borsa İstanbul Analisti'ne hoş geldiniz! Lütfen sol menüden giriş yapın.")
+    st.stop()
+
+# --- YENİ: ANAHTARLARI VERİTABANINDAN OTOMATİK GETİR ---
+if "gemini_key" not in st.session_state or "groq_key" not in st.session_state:
+    try:
+        response = requests.get(f"https://finsight-ai-backend-u1cw.onrender.com/get_keys/{st.session_state.user_email}")
+        if response.status_code == 200:
+            keys = response.json()
+            st.session_state.gemini_key = keys.get("gemini_key", "")
+            st.session_state.groq_key = keys.get("groq_key", "")
+        else:
+            st.sidebar.error("⚠️ API anahtarları veritabanından alınamadı.")
+    except Exception as e:
+        st.sidebar.error(f"⚠️ API Bağlantı Hatası: {e}")
+
 
 st.sidebar.title("🤖 Kontrol Paneli")
 secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
@@ -122,16 +143,23 @@ st.markdown("---")
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 API Ayarları")
 # Kullanıcıdan API anahtarını şifreli (yıldızlı) şekilde alıyoruz
-kullanici_api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Google AI Studio'dan alabilirsiniz.", key="gemini_hafıza")
-groq_api_key = st.sidebar.text_input("Groq API Key (Agresif Yorumcu)", type="password",help="Groq'un kendi sitesinden alabilirsiniz.", key="groq hafıza") 
+kullanici_api_key = st.session_state.get("gemini_key","")
+groq_api_key = st.session_state.get("groq_key","")
 agresif_yorum=""
-if not kullanici_api_key:
-    st.sidebar.warning("⚠️ Gemini API Key eksik!")
+
+api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
+gr_durum = api_veri.get("groq_valid", False)
+g_durum = api_veri.get("gemini_valid", False)
+if not g_durum:
+    st.sidebar.warning("⚠️ Gemini API Key Hatalı!")
 else:
     st.sidebar.success("✅ Gemini Hazır")
 
-if not groq_api_key:
-    st.sidebar.warning("ℹ️ Groq anahtarı yok: Agresif yorumcu modu pasif.")
+if not gr_durum:
+    st.sidebar.warning("ℹ️ Groq anahtarı hatalı: Agresif yorumcu modu pasif.")
+else:
+    # İŞTE EKSİK OLAN SATIR BU! Kod anahtarı bulduğunda bu yeşil yazıyı basacak.
+    st.sidebar.success("✅ Groq Hazır")
 
 if secim== "Tek Hisse Analizi":
     sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
@@ -143,10 +171,6 @@ if secim== "Tek Hisse Analizi":
         if analiz_button:
             if not sembol_input:
                 st.warning("Lütfen bir Hisse ismi girin!")
-                if not sembol_input:
-                    st.warning("Lütfen bir Hisse ismi girin!")
-                elif not kullanici_api_key:
-                    st.error("Analiz için önce Gemini API anahtarını girmelisiniz!")
             elif not kullanici_api_key: # <-- BURASI KRİTİK: Anahtar yoksa içeri sokma!
                 st.error("Analiz için önce Gemini API anahtarını girmelisiniz!")
             else:
