@@ -26,34 +26,6 @@ def login_sidebar():
     if 'verify_email' not in st.session_state:
         st.session_state.verify_email = ""
 
-    if st.session_state.awaiting_verification:
-        st.sidebar.markdown("---")
-        st.sidebar.subheader("🔐 E-posta Doğrulama")
-        st.sidebar.warning(f"📧 {st.session_state.verify_email} adresine gönderilen kodu giriniz.")
-
-        girilen_kod = st.sidebar.text_input("6 Haneli Doğrulama Kodu", key="otp_input")
-
-        if st.sidebar.button("Kodu Doğrula"):
-            if girilen_kod:
-                verify_res = requests.post(f"{BASE_URL}/verify",
-                                           json={"email": st.session_state.verify_email, "code": girilen_kod})
-
-                if verify_res.status_code == 200:
-                    st.sidebar.success("✅ E-posta doğrulandı! Şimdi giriş yapabilirsiniz.")
-                    st.session_state.awaiting_verification = False
-                    time.sleep(2)
-                    st.rerun()
-                else:
-                    hata_detayi = verify_res.json().get("detail", "Hatalı kod girdiniz.")
-                    st.sidebar.error(f"❌ Hata: {hata_detayi}")
-
-        if st.sidebar.button("İptal / Geri Dön"):
-            st.session_state.awaiting_verification = False
-            st.rerun()
-
-        # Doğrulama ekranındayken aşağıdaki Giriş/Kayıt sekmelerini GÖSTERME
-        return False
-
     # --- 2. GİRİŞ YAPILMAMIŞSA: GİRİŞ/KAYIT FORMU ---
     if not st.session_state.logged_in:
         menu = st.sidebar.tabs(["Giriş Yap", "Kayıt Ol"])
@@ -114,16 +86,15 @@ def login_sidebar():
                 """, unsafe_allow_html=True)
 
             n_pw2 = st.text_input("Şifre (Tekrar)", type="password", key="reg_pass2")
-            gemini = st.text_input(
-    label="Gemini API Key",
-    type="password",
-    help="Google AI Studio'dan alabilirsiniz."  # <-- İşte o soru işaretini çıkaran sihirli kod
-)
+            gemini = st.text_input( label="Gemini API Key",
+                    type="password",
+                    help="Google AI Studio'dan alabilirsiniz."  # <-- İşte o soru işaretini çıkaran sihirli kod
+            )
             groq = st.text_input(
-    label="Groq API Key (Agresif Yorumcu)",
-    type="password",
-    help="Groq'un kendi sitesinden alabilirsiniz." # <-- Groq için olan ipucu
-)
+                label="Groq API Key (Agresif Yorumcu)",
+                type="password",
+                help="Groq'un kendi sitesinden alabilirsiniz." # <-- Groq için olan ipucu
+            )
 
             if st.button("Hesabı Oluştur"):
                 if not sifre_gecerli:
