@@ -120,7 +120,7 @@ def login_sidebar():
                         if res.status_code == 200:
                             st.session_state.awaiting_verification = True
                             st.session_state.verify_email = n_email
-                            st.success("✅ Kayıt Başarılı! Lütfen terminale düşen kodu giriniz.")
+                            st.success("✅ Kayıt Başarılı!")
                             time.sleep(2)
                             st.rerun()
                         else:
