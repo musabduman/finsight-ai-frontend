@@ -64,6 +64,11 @@ def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
     return dict(ticker)
 
+#pytorc modelini çağırma
+@st.cache_resource
+def load_pytorch_model():
+    return deeplearning()
+
 def get_temel_hesapla(symbol):
     ticker = yf.Ticker(symbol)
     
@@ -147,6 +152,8 @@ kullanici_api_key = st.session_state.get("gemini_key","")
 groq_api_key = st.session_state.get("groq_key","")
 agresif_yorum=""
 
+dl_bot = load_pytorch_model()
+
 api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
 gr_durum = api_veri.get("groq_valid", False)
 g_durum = api_veri.get("gemini_valid", False)
@@ -192,17 +199,17 @@ if secim== "Tek Hisse Analizi":
                     # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
                     df = df.ffill().bfill().fillna(0) # NaN'ları doldur
 
-                    dl_bot=deeplearning()
                     gemini_bot=Gemini(api_key=kullanici_api_key)
+                    
                     my_bar.progress(50, text="Pythorc sayısal tahmin yapıyor...")
                     
-                    df_muhasebeci=df[['Open','High','Low','Close','Volume']].dropna()
-                    if len(df_muhasebeci)<50:
-                        sonuc_dl = {'yön': 'Veri Yetersiz', 'tahmin': 0, 'güven': 0}
-                    else:
-                        sonuc_dl=dl_bot.analiz_et(df_muhasebeci)
+                    sonuc_dl=dl_bot.analiz_et(df)
                     
                     ai_rapor=f"Yön: {sonuc_dl.get('yön', 'Nötr')}, hedef: {sonuc_dl.get('tahmin', 0)} TL, güven: %{sonuc_dl.get('güven', 0)}"
+                    
+                    # 3. Güvenlik kilidi (Eğer tahmin 0 döndüyse kullanıcıyı uyar)
+                    if sonuc_dl.get('yön') == "YETERSİZ VERİ":
+                        st.warning("⚠️ Hisse verisi çok yeni veya eksik olduğu için Kahin (PyTorch) analiz yapamadı.")
                     
                     my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
                     haberler_listesi=haber_cek_web(clean_symbol)
@@ -238,10 +245,17 @@ if secim== "Tek Hisse Analizi":
                 son_fiyat = float(df['Close'].iloc[-1])
                 rsi_deger = float(df['RSI'].iloc[-1])
                                 
+                # PyThorc sonuçlarını metriklerde gösterirken renkli kutucuklar kullanalım
+                st.subheader(f"📊 {clean_symbol} Analiz Paneli")
+
                 c1,c2,c3,c4,c5=st.columns(5)
                 son_fiyat=df['Close'].iloc[-1]
+                
                 c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
-                c2.metric("PyThorc hedefi", f"Yön: {sonuc_dl['yön']}, hedef: {sonuc_dl['tahmin']}₺, güven: %{sonuc_dl['güven']}")
+                
+                yon_emoji = "🔼" if sonuc_dl['yön'] == "YÜKSELİŞ" else "🔽"
+                c2.metric("PyThorc Hedefi", f"{sonuc_dl['tahmin']:.2f}₺", f"{yon_emoji} {sonuc_dl['yön']}")
+
                 c3.metric("RSI",f"{df['RSI'].iloc[-1]:.1f}")
                 c4.metric("MACD Sinyali", f"{df['MACD'].iloc[-1]:.2f}")
                 
@@ -279,10 +293,7 @@ elif secim == "Mega Tarama":
 
     if st.button("Mega Taramayı Başlat", type="primary"):
         progress_bar = st.progress(0, text="BIST100 hisseleri taranıyor, lütfen bekleyin...")
-        tarama_sonuclari = []
-        
-        # PyTorch modelini bir kez başlatıyoruz
-        dl_bot = deeplearning() 
+        tarama_sonuclari = [] 
 
         for i, sembol in enumerate(bist100_hisseler):
             # İlerleme çubuğunu güncelle
@@ -474,7 +485,6 @@ elif secim == "BIST30 Tarama":
         bulunan_hisseler = []
         
         # Sadece sinyal çıkarsa kullanılacak olan botları baştan tanımlıyoruz
-        dl_bot = deeplearning()
         gemini_bot = Gemini(api_key=kullanici_api_key)
         try:
             groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
@@ -519,13 +529,10 @@ elif secim == "BIST30 Tarama":
                         st.info(f"{clean_symbol} için yapay zeka ajanları çalışıyor, lütfen bekleyin...")
                         
                         # PyTorch Sayısal Tahmin
-                        df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
+                        
                         son_sbs = df['SBS'].iloc[-1]
 
-                        if len(df_muhasebeci) < 50:
-                            sonuc_dl = {'yön': 'Veri Yetersiz', 'tahmin': 0, 'güven': 0}
-                        else:
-                            sonuc_dl = dl_bot.analiz_et(df_muhasebeci)
+                        sonuc_dl=dl_bot.analiz_et(df)
                         
                         dl_tahmin = 0 if pd.isna(sonuc_dl.get('tahmin', 0)) else sonuc_dl.get('tahmin', 0)
                         dl_guven = 0 if pd.isna(sonuc_dl.get('güven', 0)) else sonuc_dl.get('güven', 0)
