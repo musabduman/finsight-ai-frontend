@@ -1,136 +1,118 @@
 import math
 import torch
-import warnings
-
-import numpy as np
 import torch.nn as nn
+import numpy as np
 import pandas as pd
-import torch.optim as optim
-
-from sklearn.preprocessing import MinMaxScaler
-
-warnings.filterwarnings("ignore")
+import joblib # .gz dosyalarını açmak için
+import os
 
 class deeplearning:
     def __init__(self):
-        self.model=nn.Sequential(nn.Linear(6,32),
-                                 nn.ReLU(),
-                                 nn.Linear(32,1)
-                                 )
-    
-    def analiz_et(self,df):
-        if df is None or df.empty:
-                return {"yön": "VERİ YOK", "güven": "0"}
-        data=df.copy()
+        # 1. Eğittiğimiz modelin BİREBİR aynısını burada da tanımlıyoruz (Şablon)
+        self.model = nn.Sequential(
+            nn.Linear(6, 16),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(16, 1)
+        )
+        
+        # 2. Dosya yollarını belirliyoruz (Streamlit'te hata almamak için os.path kullanmak iyidir)
+        klasör = os.path.dirname(__file__) # Şu anki dosyanın olduğu klasör
+        model_yolu = os.path.join(klasör, "kahin_model.pth")
+        x_scaler_yolu = os.path.join(klasör, "x_scaler.gz")
+        y_scaler_yolu = os.path.join(klasör, "y_scaler.gz")
 
+        # 3. Eğitilmiş beyni ve sözlükleri yüklüyoruz
+        try:
+            # Model ağırlıklarını yükle
+            state_dict=torch.load(model_yolu, map_location=torch.device('cpu'), weights_only=True)
+            new_state_dict={k.replace('model.',''): v for k, v in state_dict.items()}
+            self.model.load_state_dict(new_state_dict)
+            self.model.eval() # ÇOK KRİTİK: Modeli tahmin moduna aldık (Dropout kapandı)
+            
+            # Scaler'ları yükle
+            self.x_scaler = joblib.load(x_scaler_yolu)
+            self.y_scaler = joblib.load(y_scaler_yolu)
+            
+            self.hazir_mi = True
+            print("✅ Model ve Scaler'lar başarıyla yüklendi!")
+        except Exception as e:
+            self.hazir_mi = False
+            print(f"❌ Yükleme hatası: {e}")
+    
+    def analiz_et(self, df):
+        # 1. GÜVENLİK KONTROLÜ
+        if df is None or df.empty or not self.hazir_mi:
+            return {
+                "suanki_fiyat": 0.0, # Test kodunun çökmemesi için ekledik
+                "tahmin": 0.0, 
+                "yön": "HATA", 
+                "güven": 0
+            }
+        
+        # --- KRİTİK DÜZELTME: Sütun karmaşasını bitiriyoruz ---
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+            
+        # 2. VERİ HAZIRLAMA (Eğitimdekiyle birebir aynı indikatörler olmalı!)
         df = df.sort_index(ascending=True)
         
+        # Temel teknik indikatörlerin hesaplanması
         df['Getiri'] = df['Close'].pct_change()
         df['Hacim_degisimi'] = df['Volume'].pct_change()
-        df['Oynaklık'] = (df['High'] - df['Low']) / df['Close']
-
-        #macd
+        
         exp1 = df['Close'].ewm(span=12, adjust=False).mean()
         exp2 = df['Close'].ewm(span=26, adjust=False).mean()
         df['MACD'] = exp1 - exp2
-        df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
-        df['MACD_Fark'] = df['MACD'] - df['Signal_Line'] # Histogram
         
-        # RSI
         delta = df['Close'].diff()
-        gain = (delta.where(delta > 0, 0))
-        lose = (-delta.where(delta < 0, 0))
-        avg_gain = gain.ewm(com=13, adjust=False).mean()
-        avg_lose = lose.ewm(com=13, adjust=False).mean()
-        rs = avg_gain / avg_lose
-        df['RSI'] = 100 - (100 / (1 + rs))
+        gain = (delta.where(delta > 0, 0)).ewm(com=13, adjust=False).mean()
+        lose = (-delta.where(delta < 0, 0)).ewm(com=13, adjust=False).mean()
+        df['RSI'] = 100 - (100 / (1 + (gain / lose)))
         
-        #bollinger
         df['SMA_20'] = df['Close'].rolling(window=20).mean()
         df['STD_20'] = df['Close'].rolling(window=20).std()
         df['Bollinger_Upper'] = df['SMA_20'] + (df['STD_20'] * 2)
         df['Bollinger_Lower'] = df['SMA_20'] - (df['STD_20'] * 2)
         df['Bollinger_Konum'] = (df['Close'] - df['Bollinger_Lower']) / (df['Bollinger_Upper'] - df['Bollinger_Lower'])
-        
-        #SMA_50,SMA_200
-        df['SMA_50'] = df['Close'] / df['Close'].rolling(window=50).mean()
-        df['SMA_200'] = df['Close'] / df['Close'].rolling(window=200).mean()
-        
-        features_to_lag = ['Getiri', 'RSI', 'Hacim_degisimi', 'MACD_Fark']
-        for feature in features_to_lag:
-            df[f'{feature}_Lag1'] = df[feature].shift(1)
-            df[f'{feature}_Lag2'] = df[feature].shift(2)
-        
-        df['Gun'] = df.index.dayofweek
         df['Momentum'] = df['Close'] / df['Close'].shift(10)
 
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        df = df.astype('float32')
-
-        df['Target']=df['Close'].shift(-1)
-        
+        # 3. VERİYİ MODELE UYGUN HALE GETİRME
         features = ['Close', 'RSI', 'MACD', 'Bollinger_Konum', 'Hacim_degisimi', 'Momentum']
-
-        son_gün_verisi=df[features].iloc[[-1]].values
-
-        df_clean=df.dropna(subset=features+['Target'])
-
-        x_data=df_clean[features].values
-        y_data=df_clean[['Target']].values
-
-        x_scaler=MinMaxScaler()
-        y_scaler=MinMaxScaler()
+        df_clean = df.dropna(subset=features)
         
-        x_scaled=x_scaler.fit_transform(x_data)
-        y_scaled=y_scaler.fit_transform(y_data)
+        if len(df_clean) < 1:
+            return {"yön": "YETERSİZ VERİ", "tahmin": 0, "güven": 0}
 
-        x=torch.tensor(x_scaled,dtype=torch.float32)
-        y=torch.tensor(y_scaled,dtype=torch.float32)
-        
-        hata=nn.MSELoss()
-        optime=optim.Adam(self.model.parameters(), lr=0.005)
+        # Sadece en son günün verisini (bugünü) tahmin için ayırıyoruz
+        son_gün_verisi = df_clean[features].iloc[[-1]].values
 
-        for epoch in range(1000):
-            optime.zero_grad()
+        # --- ÇOK KRİTİK: Kendi eğittiğin ölçekleyicileri (Scaler) kullanıyoruz ---
+        son_gün_scaled = self.x_scaler.transform(son_gün_verisi)
+        son_gün_tensor = torch.tensor(son_gün_scaled, dtype=torch.float32)
 
-            y_pred=self.model(x)
-            loss=hata(y_pred,y)
+        # 4. TAHMİN (INFERENCE)
+        with torch.no_grad(): # Türev hesaplamayı kapat, hızlansın
+            cikti = self.model(son_gün_tensor)
             
-            loss.backward()
+        # 0-1 arasındaki sonucu tekrar TL bazında fiyata çeviriyoruz
+        tahmin_fiyat = self.y_scaler.inverse_transform(cikti.numpy())[0][0]
+        suanki_fiyat = float(df_clean['Close'].iloc[-1])
 
-            optime.step()
+        # 5. SONUÇLARI ANALİZ ETME
+        yon = "YÜKSELİŞ" if tahmin_fiyat > suanki_fiyat else "DÜŞÜŞ"
+        
+        # Basit bir güven skoru (Tahmin ne kadar uzaktaysa AI o kadar 'emin' demektir)
+        fark_orani = abs(tahmin_fiyat - suanki_fiyat) / suanki_fiyat
+        guven_skoru = min(99, int(60 + (fark_orani * 1000)))
 
-        son_gün=x_scaler.transform(son_gün_verisi)
-        son_gün_tensor=torch.tensor(son_gün,dtype=torch.float32)
-        
-        sonuc=self.model(son_gün_tensor)
-        sonuc=y_scaler.inverse_transform(sonuc.detach().numpy())
+        # NaN Koruması
+        if math.isnan(tahmin_fiyat):
+            return {"suanki_fiyat": suanki_fiyat, "tahmin": 0, "yön": "BELİRSİZ", "güven": 0}
 
-        # --- ESKİ RETURN SATIRINI SİL VE BURAYI YAPIŞTIR ---
-        
-        tahmin_degeri = sonuc[0][0]
-        suanki_fiyat = df['Close'].iloc[-1]
-        
-        # Gelecekteki fiyat şu ankinden büyükse YÜKSELİŞ, değilse DÜŞÜŞ
-        yon = "YÜKSELİŞ" if tahmin_degeri > suanki_fiyat else "DÜŞÜŞ"
-        
-        # Tahminle şu anki fiyat arasındaki makasa göre basit bir AI güven skoru
-        fark_orani = abs(tahmin_degeri - suanki_fiyat) / suanki_fiyat
-        guven_skoru = min(99, int(60 + (fark_orani * 1000))) 
-        # 🛡️ 1. NAN KORUMASI: Hedef fiyat NaN gelirse 0.0 yap
-        if pd.isna(tahmin_degeri) or math.isnan(tahmin_degeri):
-            tahmin_degeri = 0.0
-            yon = "Veri Yetersiz"
-            
-        # 🛡️ 2. NAN KORUMASI: Güven oranı NaN gelirse 0.0 yap
-        if pd.isna(guven_skoru) or math.isnan(guven_skoru):
-            guven_skoru = 0.0
-        # main.py dosyasının beklediği SÖZLÜK (Dictionary) formatında cevap veriyoruz:
         return {
-            "suanki_fiyat": round(float(suanki_fiyat), 2),
-            "tahmin": round(float(tahmin_degeri), 2),
+            "suanki_fiyat": round(suanki_fiyat, 2),
+            "tahmin": round(float(tahmin_fiyat), 2),
             "yön": yon,
             "güven": guven_skoru
         }
-        
-        
