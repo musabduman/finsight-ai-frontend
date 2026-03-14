@@ -6,7 +6,7 @@ ai = deeplearning()
 
 # 2. Test için rastgele bir hisse seçelim (Meselen THYAO)
 print("Canlı veri çekiliyor...")
-test_df = yf.download("PGSUS.IS", period="1mo", interval="1h")
+test_df = yf.download("THYAO.IS", period="1mo", interval="1h")
 
 # 3. Analiz butonuna basalım
 print("Tahmin yapılıyor...")
