@@ -249,7 +249,7 @@ with main_col:
                     # PyThorc sonuçlarını metriklerde gösterirken renkli kutucuklar kullanalım
                     st.subheader(f"📊 {clean_symbol} Analiz Paneli")
 
-                    c1,c2,c3,c4,c5=st.columns(5)
+                    c1,c2,c3,c4,c5=main_col.columns(5)
                     son_fiyat=df['Close'].iloc[-1]
                     
                     c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
@@ -583,17 +583,17 @@ with chat_col:
     st.markdown("---")
 
     if "chat_gecmisi" not in st.session_state:
-        st.session_state.chat_gecmisi=[]
+        st.session_state.chat_gecmisi = []
 
-        for msg in st.session_state.chat_gecmisi:
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
+    for msg in st.session_state.chat_gecmisi:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
-        if soru :=st.chat_input("Bir şey sor..."):
-            st.session_state.chat_gecmisi.append({"role":"user","content":soru})
-
-            chat_bot = GroqChat(api_key=groq_api_key)
-            cevap = chat_bot.generate(st.session_state.chat_gecmisi)
-
-            st.session_state.chat_gecmisi.append({"role":"assistant", "content":cevap})
-            st.rerun()
+    # chat_input yerine text_input + button
+    soru = st.text_input("Bir şey sor...", key="chat_input")
+    if st.button("Gönder") and soru:
+        st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
+        chat_bot = GroqChat(api_key=groq_api_key)
+        cevap = chat_bot.generate(st.session_state.chat_gecmisi)
+        st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
+        st.rerun()
