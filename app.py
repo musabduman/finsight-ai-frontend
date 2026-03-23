@@ -593,13 +593,14 @@ with chat_col:
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
+    gosterilecek_mesajlar = st.session_state.chat_gecmisi[-2:]
+
     for msg in st.session_state.chat_gecmisi:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
 
     # --- YENİ EKLENEN KISIM BURADAN BAŞLIYOR ---
-    soru = st.text_input("Bir şey sor...", key="chat_input")
-    if st.button("Gönder") and soru:
+    if soru := st.chat_input("Bana bir şey sor..."):
         # 1. Kullanıcı sorusunu geçmişe ekle
         st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
         

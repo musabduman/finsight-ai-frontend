@@ -312,7 +312,7 @@ class GroqChat(BaseLLM):
                 messages=messages, # Artık sadece sabit metni değil, tüm geçmişi yolluyoruz!
                 model=self.model,
                 temperature=0.6, 
-                max_tokens=1024
+                max_tokens=512
             )
             return chat_completion.choices[0].message.content.strip()
         except Exception as e:
