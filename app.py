@@ -144,7 +144,7 @@ def haber_cek_web(symbol):
 
 st.title("🚀 Borsa İstanbul Analisti")
 st.markdown("---")
-main_col, chat_col = st.columns[3,1]
+main_col, chat_col = st.columns([3,1])
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 API Ayarları")
