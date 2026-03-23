@@ -285,3 +285,30 @@ class GroqDenetci(BaseLLM):
         
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
+
+class GroqChat(BaseLLM):
+    
+    def __init__(self,api_key,model="llama-3.1-8b-instant"):
+        self.model=model
+        self.client=Groq(api_key=api_key)
+        self.groq_prompt="""Sen BİST odaklı yardımcı bir borsa asistanısın.
+        Kısa, net ve anlaşılır cevaplar ver. Teknik terimler kullanabilirsin ama
+        gereksiz uzatma. Yatırım tavsiyesi vermediğini hatırlat gerekirse."""
+    
+    def build_prompt(self, mesaj_gecmisi):
+        return mesaj_gecmisi
+    
+    def generate(self, mesaj_gecmisi):
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": self.groq_prompt}],
+                model=self.model,
+                temperature=0.5, # Mallığı bitiren altın ayar burası!
+                max_tokens=512 # Cevabı kısa tutmaya zorluyoruz
+            )
+            res = chat_completion.choices[0].message.content.strip()
+            return res
+        
+        except Exception as e:
+            return f"⚠️ Denetçi Bağlantı Hatası: {e}"
+        
