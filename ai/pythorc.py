@@ -79,6 +79,7 @@ class deeplearning:
 
         # 3. VERİYİ MODELE UYGUN HALE GETİRME
         features = ['Close', 'RSI', 'MACD', 'Bollinger_Konum', 'Hacim_degisimi', 'Momentum']
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
         df_clean = df.dropna(subset=features)
         
         if len(df_clean) < 1:
