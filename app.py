@@ -597,11 +597,19 @@ with chat_col:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
 
-    # chat_input yerine text_input + button
+    # --- YENİ EKLENEN KISIM BURADAN BAŞLIYOR ---
     soru = st.text_input("Bir şey sor...", key="chat_input")
     if st.button("Gönder") and soru:
+        # 1. Kullanıcı sorusunu geçmişe ekle
         st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
+        
+        # 2. O anki aktif analizi state üzerinden al (yoksa boş döner)
+        aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Şu an ekranda aktif bir hisse analizi bulunmuyor.")
+        
+        # 3. Botu çağır ve geçmiş + bağlam ile birlikte yolla
         chat_bot = GroqChat(api_key=groq_api_key)
-        cevap = chat_bot.generate(st.session_state.chat_gecmisi)
+        cevap = chat_bot.generate(st.session_state.chat_gecmisi, aktif_baglam)
+        
+        # 4. Asistanın cevabını geçmişe ekle ve sayfayı yenile
         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
         st.rerun()
