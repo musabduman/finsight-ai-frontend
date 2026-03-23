@@ -195,6 +195,7 @@ with main_col:
                         my_bar.progress(20, text="Veriler çekildi, teknik analiz yapılıyor...")
                         df, fib_20, fib_200=teknik_analiz(df)
                         
+                        son_fiyat=df['Close'].iloc[-1]
                         son_sbs = df['SBS'].iloc[-1]
                         # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
                         # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
@@ -226,7 +227,15 @@ with main_col:
                         else:
                             # Groq yoksa direkt Gemini sonucunu bas
                             agresif_yorum="ℹ️ Groq API anahtarı girilmediği için agresif yorum pasif."
-
+                        
+                        st.session_state.aktif_analiz_baglami = f"""
+                            İncelenen Hisse: {clean_symbol}
+                            Son Fiyat: {son_fiyat}₺
+                            Kahin (PyTorch) Tahmini: {sonuc_dl.get('tahmin')}₺ (Yön: {sonuc_dl.get('yön')})
+                            Gemini Analisti Yorumu: {analiz_sonucu}
+                            Groq Denetçi Yorumu: {agresif_yorum}
+                            """
+                        
                     except Exception as e:
                         st.error( f"Hisse bulunamadı ya da veri çekilemedi! {e}")
                         analiz_sonucu=""
@@ -250,7 +259,6 @@ with main_col:
                     st.subheader(f"📊 {clean_symbol} Analiz Paneli")
 
                     c1,c2,c3,c4,c5=main_col.columns(5)
-                    son_fiyat=df['Close'].iloc[-1]
                     
                     c1.metric("Son Fiyat",f"{son_fiyat:.2f}₺")
                     

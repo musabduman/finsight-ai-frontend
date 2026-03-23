@@ -39,8 +39,7 @@ class TechnicalAnalyzer:
             (self.df['MACD'].shift(1) <= self.df['Signal_line'].shift(1)),1,
         np.where(
             (self.df['MACD'] < self.df['Signal_line']) &
-            (self.df['MACD'].shift(1) >= self.df['Signal_line'].shift(1)),-1,
-            0
+            (self.df['MACD'].shift(1) >= self.df['Signal_line'].shift(1)),-1,0
         ))
         return self.df
 

@@ -287,28 +287,33 @@ class GroqDenetci(BaseLLM):
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
 
 class GroqChat(BaseLLM):
-    
-    def __init__(self,api_key,model="llama-3.1-8b-instant"):
-        self.model=model
-        self.client=Groq(api_key=api_key)
-        self.groq_prompt="""Sen BİST odaklı yardımcı bir borsa asistanısın.
-        Kısa, net ve anlaşılır cevaplar ver. Teknik terimler kullanabilirsin ama
-        gereksiz uzatma. Yatırım tavsiyesi vermediğini hatırlat gerekirse."""
-    
-    def build_prompt(self, mesaj_gecmisi):
-        return mesaj_gecmisi
-    
-    def generate(self, mesaj_gecmisi):
+    def __init__(self, api_key, model="llama-3.1-8b-instant"):
+        self.model = model
+        self.client = Groq(api_key=api_key)
+        
+    def generate(self, mesaj_gecmisi, aktif_baglam=""):
+        # System prompt'unu dinamik hale getiriyoruz
+        system_prompt = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
+        Görevlerin:
+        1. Kullanıcının borsa ve finans terimleriyle (örn: FK, PD/DD, RSI nedir) ilgili sorularını net, eğitici ve anlaşılır cevapla.
+        2. Kesinlikle yatırım tavsiyesi verme.
+        3. Kullanıcı sana ekrandaki analizle ilgili bir şey sorarsa ("Bu yoruma katılıyor musun?", "PyTorch hedefi ne?" gibi), aşağıda sana verilen 'Ekranda Açık Olan Analiz' verilerini kullanarak cevap ver. Eğer bir hata veya eksik görürsen kendi agresif yorumunu katabilirsin.
+
+        Ekranda Açık Olan Mevcut Analiz Bağlamı (Eğer boşsa kullanıcı henüz analiz başlatmamıştır):
+        {aktif_baglam}
+        """
+        
+        # Groq'un anlayacağı formata çeviriyoruz: Önce Sistem, sonra Sohbet Geçmişi
+        messages = [{"role": "system", "content": system_prompt}]
+        messages.extend(mesaj_gecmisi)
+        
         try:
             chat_completion = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": self.groq_prompt}],
+                messages=messages, # Artık sadece sabit metni değil, tüm geçmişi yolluyoruz!
                 model=self.model,
-                temperature=0.5, # Mallığı bitiren altın ayar burası!
-                max_tokens=512 # Cevabı kısa tutmaya zorluyoruz
+                temperature=0.6, 
+                max_tokens=1024
             )
-            res = chat_completion.choices[0].message.content.strip()
-            return res
-        
+            return chat_completion.choices[0].message.content.strip()
         except Exception as e:
-            return f"⚠️ Denetçi Bağlantı Hatası: {e}"
-        
+            return f"⚠️ Chat Bağlantı Hatası: {e}"
