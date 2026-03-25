@@ -610,7 +610,7 @@ with chat_col:
         # 4. Asistanın cevabını geçmişe ekle ve sayfayı yenile
         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
     
-    mesaj_kutusu = st.container(height=500, border=False) 
+    mesaj_kutusu = st.container(height=300, border=False) 
     with mesaj_kutusu:
         for msg in st.session_state.chat_gecmisi:
             with st.chat_message(msg["role"]):
