@@ -595,12 +595,6 @@ with chat_col:
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
-    gosterilecek_mesajlar = st.session_state.chat_gecmisi[-2:]
-
-    for msg in st.session_state.chat_gecmisi:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-
     # --- YENİ EKLENEN KISIM BURADAN BAŞLIYOR ---
     if soru:
         # 1. Kullanıcı sorusunu geçmişe ekle
@@ -615,4 +609,9 @@ with chat_col:
         
         # 4. Asistanın cevabını geçmişe ekle ve sayfayı yenile
         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
-        st.rerun()
+    
+    mesaj_kutusu = st.container(height=500, border=False) 
+    with mesaj_kutusu:
+        for msg in st.session_state.chat_gecmisi:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
