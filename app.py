@@ -586,6 +586,8 @@ with main_col:
     elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
+soru = st.chat_input("Bana bir şey sor...")
+
 with chat_col:
     st.markdown("### 💬 Asistan")
     st.markdown("---")
@@ -600,7 +602,7 @@ with chat_col:
             st.write(msg["content"])
 
     # --- YENİ EKLENEN KISIM BURADAN BAŞLIYOR ---
-    if soru := st.chat_input("Bana bir şey sor..."):
+    if soru:
         # 1. Kullanıcı sorusunu geçmişe ekle
         st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
         
