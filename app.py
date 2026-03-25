@@ -586,32 +586,49 @@ with main_col:
     elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
-soru = st.chat_input("Bana bir şey sor...")
-
-with chat_col:
+@st.fragment
+def chat_bolumu():
     st.markdown("### 💬 Asistan")
     st.markdown("---")
 
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
-    # --- YENİ EKLENEN KISIM BURADAN BAŞLIYOR ---
-    if soru:
-        # 1. Kullanıcı sorusunu geçmişe ekle
+    # Mesajı ÖNCE işle
+    if st.session_state.get("_bekleyen_soru"):
+        soru = st.session_state.pop("_bekleyen_soru")
         st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
-        
-        # 2. O anki aktif analizi state üzerinden al (yoksa boş döner)
-        aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Şu an ekranda aktif bir hisse analizi bulunmuyor.")
-        
-        # 3. Botu çağır ve geçmiş + bağlam ile birlikte yolla
+
+        aktif_baglam = st.session_state.get(
+            "aktif_analiz_baglami",
+            "Şu an ekranda aktif bir hisse analizi bulunmuyor."
+        )
         chat_bot = GroqChat(api_key=groq_api_key)
         cevap = chat_bot.generate(st.session_state.chat_gecmisi, aktif_baglam)
-        
-        # 4. Asistanın cevabını geçmişe ekle ve sayfayı yenile
         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
-    
-    mesaj_kutusu = st.container(height=300, border=False) 
+
+    # Scrollable mesaj alanı
+    mesaj_kutusu = st.container(height=500, border=False)
     with mesaj_kutusu:
         for msg in st.session_state.chat_gecmisi:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
+
+    # Input alanı
+    input_col, btn_col = st.columns([5, 1])
+    with input_col:
+        soru = st.text_input(
+            label="soru",
+            placeholder="Bana bir şey sor...",
+            label_visibility="collapsed",
+            key="chat_input_box"
+        )
+    with btn_col:
+        gonder = st.button("➤", use_container_width=True)
+
+    if gonder and soru:
+        st.session_state["_bekleyen_soru"] = soru
+        st.rerun(scope="fragment")  # ✅ Sadece bu fragment yenilenir!
+
+with chat_col:
+    chat_bolumu()
