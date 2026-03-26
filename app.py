@@ -594,41 +594,51 @@ def chat_bolumu():
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
-    # Mesajı ÖNCE işle
-    if st.session_state.get("_bekleyen_soru"):
-        soru = st.session_state.pop("_bekleyen_soru")
-        st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
+    mesaj_kutusu = st.container(height=300, border=False)
+    
+    #İşlem mantığını bir callback fonksiyonuna alıyoruz
+    def mesaj_isle():
+        # Text input'un güncel değerini session_state üzerinden al
+        soru = st.session_state.get("chat_input_box", "").strip()
+        
+        if soru:
+            # 1. Kullanıcı sorusunu geçmişe ekle
+            st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
+            
+            # 2. Asistan cevabını al
+            aktif_baglam = st.session_state.get(
+                "aktif_analiz_baglami",
+                "Şu an ekranda aktif bir hisse analizi bulunmuyor."
+            )
+            chat_bot = GroqChat(api_key=groq_api_key)
+            cevap = chat_bot.generate(st.session_state.chat_gecmisi, aktif_baglam)
+            
+            # 3. Asistan cevabını geçmişe ekle
+            st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
+            
+            # 4. Input kutusunu temizle (bir sonraki render'da boş görünmesi için)
+            st.session_state.chat_input_box = ""
 
-        aktif_baglam = st.session_state.get(
-            "aktif_analiz_baglami",
-            "Şu an ekranda aktif bir hisse analizi bulunmuyor."
+    # Input alanı ve Buton
+    input_col, btn_col = st.columns([5, 1])
+    with input_col:
+        st.text_input(
+            label="soru",
+            placeholder="Bana bir şey sor...",
+            label_visibility="collapsed",
+            key="chat_input_box",
+            on_change=mesaj_isle # Kullanıcı Enter'a bastığında tetiklenir
         )
-        chat_bot = GroqChat(api_key=groq_api_key)
-        cevap = chat_bot.generate(st.session_state.chat_gecmisi, aktif_baglam)
-        st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
+    with btn_col:
+        # Kullanıcı butona tıkladığında tetiklenir
+        st.button("➤", use_container_width=True, on_click=mesaj_isle)
 
-    # Scrollable mesaj alanı
-    mesaj_kutusu = st.container(height=500, border=False)
+    # GÜNCEL MESAJLARI BASTIRMA
+    # İşlem bittikten sonra en son adımda kutunun içini dolduruyoruz
     with mesaj_kutusu:
         for msg in st.session_state.chat_gecmisi:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
-
-    # Input alanı
-    input_col, btn_col = st.columns([5, 1])
-    with input_col:
-        soru = st.text_input(
-            label="soru",
-            placeholder="Bana bir şey sor...",
-            label_visibility="collapsed",
-            key="chat_input_box"
-        )
-    with btn_col:
-        gonder = st.button("➤", use_container_width=True)
-
-    if gonder and soru:
-        st.session_state["_bekleyen_soru"] = soru
-        st.rerun(scope="fragment")  # ✅ Sadece bu fragment yenilenir!
 
 with chat_col:
     chat_bolumu()
