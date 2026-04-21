@@ -25,7 +25,7 @@ class deeplearning:
         # 3. Eğitilmiş beyni ve sözlükleri yüklüyoruz
         try:
             # Model ağırlıklarını yükle
-            state_dict=torch.load(model_yolu, map_location=torch.device('cpu'), weights_only=True)
+            state_dict=torch.load(model_yolu, map_location=torch.device('cuda'), weights_only=True)
             new_state_dict={k.replace('model.',''): v for k, v in state_dict.items()}
             self.model.load_state_dict(new_state_dict)
             self.model.eval() # ÇOK KRİTİK: Modeli tahmin moduna aldık (Dropout kapandı)
