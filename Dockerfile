@@ -15,4 +15,4 @@ COPY . .
 
 # 6. Projenin nasıl çalıştırılacağını belirliyoruz
 # EĞER ANA DOSYANIN ADI main.py DEĞİLSE BURAYI DEĞİŞTİR
-CMD ["python", "hisse_bilgi_özel.py"]
+CMD ["python", "app.py"]

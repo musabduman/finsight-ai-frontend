@@ -7,6 +7,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import auth_ui
 
+from hafıza import save_to_memory, load_memory, get_memory_for_llm
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
@@ -34,13 +35,14 @@ if "gemini_key" not in st.session_state or "groq_key" not in st.session_state:
 
 
 st.sidebar.title("🤖 Kontrol Paneli")
-secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama"])
+secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama","Hafıza"])
 
 st.sidebar.info("""
 **Aktif Ajanlar:**
 * 🧠 Gemini 1.5 Flash (Analist)
 * 🛡️ Groq (Agresif Analist)
 * 🧮 PyTorch (Kahin) 
+* 📚 Hafıza
 """)
 
 def normalize_symbol(symbol: str):
@@ -169,7 +171,7 @@ else:
     # İŞTE EKSİK OLAN SATIR BU! Kod anahtarı bulduğunda bu yeşil yazıyı basacak.
     st.sidebar.success("✅ Groq Hazır")
 with main_col:
-    if secim== "Tek Hisse Analizi":
+    if secim == "Tek Hisse Analizi":
         sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
         analiz_button=st.button("Analizi Başlat", type="primary")
 
@@ -586,59 +588,74 @@ with main_col:
     elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
+    elif secim == "Haber Akışı":
+        st.title("📈 Haber Analizi")
+        
+        if st.sidebar.button("Analizi Başlat"):
+            with st.spinner("Analiz ediliyor..."):
+                response = requests.get("http://localhost:5678/webhook-test/haber-analiz")
+                if response.status_code == 200:
+                    # BU KISIM ÇOK SADELEŞTİ:
+                    data = response.json()
+                    df = save_to_memory(data) # Veriyi gönder, o halletsin
+                    
+                    st.dataframe(df)
+                    st.success("Analiz tamamlandı ve hafızaya işlendi.")
+
+        # Hafızayı ekranda her zaman göster
+        st.subheader("📚 Hafıza (Geçmiş Analizler)")
+        history_df = load_memory()
+        if history_df is not None:
+            st.dataframe(history_df)
+
 @st.fragment
 def chat_bolumu():
     st.markdown("### 💬 Asistan")
-    st.markdown("---")
-
+    
+    # Geçmişi en tepede başlat
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
-    mesaj_kutusu = st.container(height=300, border=False)
-    
-    #İşlem mantığını bir callback fonksiyonuna alıyoruz
-    def mesaj_isle():
-        # Text input'un güncel değerini session_state üzerinden al
-        soru = st.session_state.get("chat_input_box", "").strip()
-        
-        if soru:
-            # 1. Kullanıcı sorusunu geçmişe ekle
-            st.session_state.chat_gecmisi.append({"role": "user", "content": soru})
-            
-            # 2. Asistan cevabını al
-            aktif_baglam = st.session_state.get(
-                "aktif_analiz_baglami",
-                "Şu an ekranda aktif bir hisse analizi bulunmuyor."
-            )
-            chat_bot = GroqChat(api_key=groq_api_key)
-            cevap = chat_bot.generate(st.session_state.chat_gecmisi, aktif_baglam)
-            
-            # 3. Asistan cevabını geçmişe ekle
-            st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
-            
-            # 4. Input kutusunu temizle (bir sonraki render'da boş görünmesi için)
-            st.session_state.chat_input_box = ""
-
-    # Input alanı ve Buton
-    input_col, btn_col = st.columns([5, 1])
-    with input_col:
-        st.text_input(
-            label="soru",
-            placeholder="Bana bir şey sor...",
-            label_visibility="collapsed",
-            key="chat_input_box",
-            on_change=mesaj_isle # Kullanıcı Enter'a bastığında tetiklenir
-        )
-    with btn_col:
-        # Kullanıcı butona tıkladığında tetiklenir
-        st.button("➤", use_container_width=True, on_click=mesaj_isle)
-
-    # GÜNCEL MESAJLARI BASTIRMA
-    # İşlem bittikten sonra en son adımda kutunun içini dolduruyoruz
-    with mesaj_kutusu:
+    # 1. EKRANA MESAJLARI BAS
+    chat_container = st.container(height=350)
+    with chat_container:
         for msg in st.session_state.chat_gecmisi:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
+
+    # 2. INPUT ALANI (En altta sabit durur)
+    if prompt := st.chat_input("Borsa hakkında bir şey sor..."):
+        # Kullanıcı mesajını ekle ve ekrana bas
+        st.session_state.chat_gecmisi.append({"role": "user", "content": prompt})
+        with chat_container:
+            with st.chat_message("user"):
+                st.write(prompt)
+
+        # 3. CEVAP ÜRET
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner("Düşünüyorum..."):
+                    # Bağlamları topla
+                    aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Aktif analiz yok.")
+                    haber_hafizasi = get_memory_for_llm(limit=5)
+                    
+                    sistem_mesaji = f"""
+                    Sen uzman bir borsa asistanısın. 
+                    Şu an ekranda şu hisse analiz ediliyor: {aktif_baglam}
+                    
+                    Ayrıca hafızanda şu geçmiş haberler var:
+                    {haber_hafizasi}
+                    
+                    Kullanıcının sorusunu bu bağlamda cevapla.
+                    """
+                    
+                    try:
+                        chat_bot = GroqChat(api_key=groq_api_key)
+                        cevap = chat_bot.generate(st.session_state.chat_gecmisi, sistem_mesaji)
+                        st.write(cevap)
+                        st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
+                    except Exception as e:
+                        st.error(f"AI Hatası: {e}")
 
 with chat_col:
     chat_bolumu()
