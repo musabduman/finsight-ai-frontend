@@ -3,6 +3,7 @@ import time
 import pandas as pd     
 import requests
 from hafıza import save_to_memory, load_memory, get_memory_for_llm
+from ollama import Client as OllamaClient
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -172,20 +173,24 @@ class Gemini(BaseLLM):
         return "⚠️ Gemini API'ye şu an ulaşılamıyor. Lütfen internet bağlantınızı veya API limitinizi (Quota) kontrol edin."
 class OllamaAgresif(BaseLLM):
     
-    def __init__(self,api_key,model="gpt-oss:120b-cloud"):
+    def __init__(self, api_key, model="gpt-oss:120b-cloud"):
         self.model = model
         self.api_key = api_key
-        self.base_url = "https://ollama.com/api/chat"  # cloud
+        # ollama kütüphanesi için Client objesini oluşturuyoruz
+        self.client = Client(
+            host="https://ollama.com",
+            headers={'Authorization': f'Bearer {self.api_key}'}
+        )
         self.haber_hafizasi = get_memory_for_llm(limit=5)
 
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
         - BİST 100'de 15, 20, 36, 45 ve 60 günlük periyotlarda matematiksel dönüşler (ritimler) vardır.
-        - 4.5 ay ve 1 yıllık mevsimsel döngüler ana yön değişimleridir[cite: 607].
-        - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir[cite: 110, 118].
+        - 4.5 ay ve 1 yıllık mevsimsel döngüler ana yön değişimleridir.
+        - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir.
         """
     
-    def build_prompt(self,df,analiz_sonucu,ai_rapor, fib_20, sbs):
+    def build_prompt(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
         
         def safe_get(series, key, default="Yok"):
             try:
@@ -225,6 +230,7 @@ class OllamaAgresif(BaseLLM):
             - Gereksiz temkinli olma.
             - Güçlü teknik sinyal varsa “AL” demekten çekinme.
             - Zayıf ama potansiyelli hisselerde “RİSKLİ AL” ifadesini kullan.
+            - Konuşma dilin günlük, samimi bir "bro" tarzında olmalı. Resmiyetten uzak dur.
 
             Kullandığın ana göstergeler:
             - Sentetik Baskı Skoru (SBS): {sbs} (En önemli momentum göstergen budur! 70 üstü füzeye bin demektir.)
@@ -281,85 +287,75 @@ class OllamaAgresif(BaseLLM):
         user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
         return gemini_prompt, user_content
     
-    def generate(self, df,analiz_sonucu,ai_rapor,fib_20,sbs):
+    def generate(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
         system_prompt, user_prompt = self.build_prompt(
-            df,analiz_sonucu,ai_rapor,fib_20,sbs
+            df, analiz_sonucu, ai_rapor, fib_20, sbs
         )
-        payload = {
-            "model":self.model,
-            "messages":[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": 0.35,
-            "max_tokens": 1800,
-            "top_p": 0.9,
-            "stream": False
-        }
-        headers = {
-            "Authorization":f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
         try:
-            response = requests.post(self.base_url, json=payload, headers=headers)
+            # ollama Client üzerinden istek atıyoruz
+            response = self.client.chat(
+                model=self.model,
+                messages=messages,
+                options={
+                    "temperature": 0.35,
+                    "top_p": 0.9,
+                    "num_predict": 1800 # max_tokens yerine ollama'da num_predict kullanılır
+                }
+            )
             
-            if response.status_code != 200:
-                return f"Apı hatası: {response.text}"
-            
-            data = response.json()
-
-            return data["message"]["content"].strip()
+            return response['message']['content'].strip()
         
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
 
 class OllamaChat(BaseLLM):
-    def __init__(self,api_key,model="gpt-oss:120b-cloud"):
+    def __init__(self, api_key, model="gpt-oss:120b-cloud"):
         self.model = model
         self.api_key = api_key
-        self.base_url = "https://ollama.com/api/chat"  # cloud
+        # ollama kütüphanesi için Client objesini oluşturuyoruz
+        self.client = Client(
+            host="https://ollama.com",
+            headers={'Authorization': f'Bearer {self.api_key}'}
+        )
         self.haber_hafizasi = get_memory_for_llm(limit=5)
     
     def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
-        # BaseLLM uyumu için build_prompt implement edildi
         system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
         Görevlerin:
         1. Borsa ve finans terimleriyle ilgili soruları net ve anlaşılır cevapla. Kısa cevaplar ver.
         2. Kesinlikle yatırım tavsiyesi verme.
         3. Ekrandaki analizle ilgili sorularda aşağıdaki bağlamı kullan.
         4. Elindeki bist 100 haberleri şu şekilde {self.haber_hafizasi}
+        5. Konuşma dilin günlük, samimi bir "bro" tarzında olmalı. Resmiyetten uzak dur.
+        
         Ekranda Açık Olan Analiz Bağlamı:
         {aktif_baglam if aktif_baglam else 'Henüz analiz başlatılmamış.'}
         """
         messages = [{"role": "system", "content": system_content}]
         messages.extend(mesaj_gecmisi)
-        return messages  # chat için tüm mesaj listesi dönüyor
+        return messages 
     
     def generate(self, mesaj_gecmisi, aktif_baglam=""):
         messages = self.build_prompt(mesaj_gecmisi, aktif_baglam)
             
-        # ollama'nın anlayacağı formata çeviriyoruz: Önce Sistem, sonra Sohbet Geçmişi
-        payload={
-            "model": self.model,
-            "messages": messages,
-            "temperature": 0.6,
-            "max_tokens": 512,
-            "stream": False 
-        }
-        headers ={
-            "Authorization":f"Bearer {self.api_key}",
-            "Content-Type":"application/json"
-        }
-        
         try:
-            response = requests.post(self.base_url, json=payload, headers=headers)
-
-            if response.status_code != 200:
-                return f"⚠️ API Hatası: {response.text}"
-
-            data = response.json()
-
-            return data["message"]["content"].strip()
+             # ollama Client üzerinden istek atıyoruz
+            response = self.client.chat(
+                model=self.model,
+                messages=messages,
+                options={
+                    "temperature": 0.6,
+                    "num_predict": 512
+                }
+            )
+            
+            return response['message']['content'].strip()
 
         except Exception as e:
             return f"⚠️ Chat Bağlantı Hatası: {e}"
