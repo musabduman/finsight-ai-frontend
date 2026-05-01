@@ -168,7 +168,7 @@ class OllamaAgresif(BaseLLM):
     
     def __init__(self,api_key,model="deepseak-v4-flash"):
         self.model = model
-        self.apı_key = api_key
+        self.api_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
         
         self.akademik_kurallar = """
@@ -271,7 +271,7 @@ class OllamaAgresif(BaseLLM):
 
             Neden? (2–3 net cümleyle açıkla)"""
         user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
-        return f"{gemini_prompt}\n\n{user_content}"
+        return gemini_prompt, user_content
     
     def generate(self, df,analiz_sonucu,ai_rapor,fib_20,sbs):
         system_prompt, user_prompt = self.build_prompt(
@@ -308,34 +308,37 @@ class OllamaAgresif(BaseLLM):
 class OllamaChat(BaseLLM):
     def __init__(self,api_key,model="deepseak-v4-flash"):
         self.model = model
-        self.apı_key = api_key
+        self.api_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
         
-    def generate(self, mesaj_gecmisi, aktif_baglam=""):
-        # System prompt'unu dinamik hale getiriyoruz
-        system_prompt = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
+    def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
+        # BaseLLM uyumu için build_prompt implement edildi
+        system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
         Görevlerin:
-        1. Kullanıcının borsa ve finans terimleriyle (örn: FK, PD/DD, RSI nedir) ilgili sorularını net, eğitici ve anlaşılır cevapla. Kısa cevaplar ver. Lafı uzatma!!
+        1. Borsa ve finans terimleriyle ilgili soruları net ve anlaşılır cevapla. Kısa cevaplar ver.
         2. Kesinlikle yatırım tavsiyesi verme.
-        3. Kullanıcı sana ekrandaki analizle ilgili bir şey sorarsa ("Bu yoruma katılıyor musun?", "PyTorch hedefi ne?" gibi), aşağıda sana verilen 'Ekranda Açık Olan Analiz' verilerini kullanarak cevap ver. Eğer bir hata veya eksik görürsen kendi agresif yorumunu katabilirsin.
+        3. Ekrandaki analizle ilgili sorularda aşağıdaki bağlamı kullan.
 
-        Ekranda Açık Olan Mevcut Analiz Bağlamı (Eğer boşsa kullanıcı henüz analiz başlatmamıştır):
-        {aktif_baglam}
+        Ekranda Açık Olan Analiz Bağlamı:
+        {aktif_baglam if aktif_baglam else 'Henüz analiz başlatılmamış.'}
         """
-        
-        # Groq'un anlayacağı formata çeviriyoruz: Önce Sistem, sonra Sohbet Geçmişi
-        messages = [{"role": "system", "content": system_prompt}]
+        messages = [{"role": "system", "content": system_content}]
         messages.extend(mesaj_gecmisi)
-        
+        return messages  # chat için tüm mesaj listesi dönüyor
+    
+    def generate(self, mesaj_gecmisi, aktif_baglam=""):
+        messages = self.build_prompt(mesaj_gecmisi, aktif_baglam)
+            
+        # ollama'nın anlayacağı formata çeviriyoruz: Önce Sistem, sonra Sohbet Geçmişi
         payload={
             "model": self.model,
-            "message": messages,
+            "messages": messages,
             "temperature": 0.6,
             "max_tokens": 512,
             "stream": False 
         }
         headers ={
-            "Authorization":f"Bearer {self.apı_key}",
+            "Authorization":f"Bearer {self.api_key}",
             "Content-Type":"application/json"
         }
         
