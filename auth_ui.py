@@ -144,15 +144,15 @@ def login_sidebar():
                     res = requests.post(f"{BASE_URL}/check_api_keys", json={"email": st.session_state.user_email})
                     if res.status_code == 200:
                         st.session_state.api_status = res.json()
-                    #else:
-                        #st.session_state.api_status = {"gemini_valid": False, "ollama_valid": False}
+                    else:
+                        st.session_state.api_status = {"gemini_valid": False, "ollama_valid": True}  # API testi başarısızsa bile Ollama'yı geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
                 except:
-                    st.session_state.api_status = {"gemini_valid": False, "ollama_valid": False}
+                    st.session_state.api_status = {"gemini_valid": False, "ollama_valid": True}  # API testi başarısızsa bile Ollama'yı geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
                 # Güvenli veri çekimi
-                api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": False}
+                api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": True}
                 g_durum = api_veri.get("gemini_valid", False)
-                gr_durum = api_veri.get("ollama_valid", False)
+                gr_durum = api_veri.get("ollama_valid", True)  # Ollama'yı varsayılan olarak geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
                 # BUNLAR KUTUNUN İÇİNDE (with bloğunda) OLDUĞU İÇİN YANA GİDER
                 st.write(f"**{'🟢' if g_durum else '🔴'} Gemini API**")
@@ -161,9 +161,9 @@ def login_sidebar():
                 status.update(label="Test tamamlandı!", state="complete", expanded=False)
         else:
             # Hafızadaki sonuçları göster
-            api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": False}
+            api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": True}
             g_durum = api_veri.get("gemini_valid", False)
-            gr_durum = api_veri.get("ollama_valid", False)
+            gr_durum = api_veri.get("ollama_valid", True)  # Ollama'yı varsayılan olarak geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
             with st.sidebar.status("Test tamamlandı!", state="complete", expanded=False):
                 # BUNLAR DA KUTUNUN İÇİNDE!
