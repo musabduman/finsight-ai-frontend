@@ -1,6 +1,5 @@
 import time
 import requests
-
 import pandas as pd
 import yfinance as yf
 import streamlit as st
@@ -11,7 +10,7 @@ from hafıza import save_to_memory, load_memory, get_memory_for_llm
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
-from ai.llm import Gemini, GroqDenetci, GroqChat
+from ai.llm import Gemini, OllamaAgresif, OllamaChat
 
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
 is_ready = auth_ui.login_sidebar()
@@ -21,13 +20,13 @@ if not is_ready:
     st.stop()
 
 # --- YENİ: ANAHTARLARI VERİTABANINDAN OTOMATİK GETİR ---
-if "gemini_key" not in st.session_state or "groq_key" not in st.session_state:
+if "gemini_key" not in st.session_state or "g_key" not in st.session_state:
     try:
         response = requests.get(f"https://finsight-ai-backend-u1cw.onrender.com/get_keys/{st.session_state.user_email}")
         if response.status_code == 200:
             keys = response.json()
             st.session_state.gemini_key = keys.get("gemini_key", "")
-            st.session_state.groq_key = keys.get("groq_key", "")
+            st.session_state.ollama_key = keys.get("ollama_key", "")
         else:
             st.sidebar.error("⚠️ API anahtarları veritabanından alınamadı.")
     except Exception as e:
@@ -40,7 +39,7 @@ secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi",
 st.sidebar.info("""
 **Aktif Ajanlar:**
 * 🧠 Gemini 1.5 Flash (Analist)
-* 🛡️ Groq (Agresif Analist)
+* 🛡️ ollama (Agresif Analist)
 * 🧮 PyTorch (Kahin) 
 * 📚 Hafıza
 """)
@@ -152,13 +151,13 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 API Ayarları")
 # Kullanıcıdan API anahtarını şifreli (yıldızlı) şekilde alıyoruz
 kullanici_api_key = st.session_state.get("gemini_key","")
-groq_api_key = st.session_state.get("groq_key","")
+ollama_api_key = st.session_state.get("ollama_key","")
 agresif_yorum=""
 
 dl_bot = load_pytorch_model()
 
-api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
-gr_durum = api_veri.get("groq_valid", False)
+api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": False}
+gr_durum = api_veri.get("ollama_valid", False)
 g_durum = api_veri.get("gemini_valid", False)
 if not g_durum:
     st.sidebar.warning("⚠️ Gemini API Key Hatalı!")
@@ -166,10 +165,10 @@ else:
     st.sidebar.success("✅ Gemini Hazır")
 
 if not gr_durum:
-    st.sidebar.warning("ℹ️ Groq anahtarı hatalı: Agresif yorumcu modu pasif.")
+    st.sidebar.warning("ℹ️ ollama anahtarı hatalı: Agresif yorumcu modu pasif.")
 else:
     # İŞTE EKSİK OLAN SATIR BU! Kod anahtarı bulduğunda bu yeşil yazıyı basacak.
-    st.sidebar.success("✅ Groq Hazır")
+    st.sidebar.success("✅ ollama Hazır")
 with main_col:
     if secim == "Tek Hisse Analizi":
         sembol_input=st.text_input("Hisse ismini giriniz (Örn: THYAO, GARAN)")
@@ -201,7 +200,7 @@ with main_col:
                         son_sbs = df['SBS'].iloc[-1]
                         # --- ANALİZ ÖNCESİ VERİ TEMİZLİK ZIRHI ---
                         # Tüm NaN değerleri temizleyelim ki o meşhur hatayı bir daha görme
-                        df = df.ffill().bfill().fillna(0) # NaN'ları doldur
+                        df = df.ffill().bfill() # NaN'ları doldur
 
                         gemini_bot=Gemini(api_key=kullanici_api_key)
                         
@@ -222,20 +221,20 @@ with main_col:
 
                         analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor, fib_200, son_sbs)
 
-                        if groq_api_key:
-                            my_bar.progress(90, text="Groq analizi denetliyor...")
-                            groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-                            agresif_yorum = groq_bot(df_kısa, analiz_sonucu,ai_rapor, fib_20, son_sbs)
+                        if ollama_api_key:
+                            my_bar.progress(90, text="ollama analizi denetliyor...")
+                            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:20b")
+                            agresif_yorum = ollama_bot.generate(df_kısa, analiz_sonucu,ai_rapor, fib_20, son_sbs)
                         else:
-                            # Groq yoksa direkt Gemini sonucunu bas
-                            agresif_yorum="ℹ️ Groq API anahtarı girilmediği için agresif yorum pasif."
+                            # ollama yoksa direkt Gemini sonucunu bas
+                            agresif_yorum="ℹ️ Ollama API anahtarı girilmediği için agresif yorum pasif."
                         
                         st.session_state.aktif_analiz_baglami = f"""
                             İncelenen Hisse: {clean_symbol}
                             Son Fiyat: {son_fiyat}₺
                             Kahin (PyTorch) Tahmini: {sonuc_dl.get('tahmin')}₺ (Yön: {sonuc_dl.get('yön')})
                             Gemini Analisti Yorumu: {analiz_sonucu}
-                            Groq Denetçi Yorumu: {agresif_yorum}
+                            ollama Denetçi Yorumu: {agresif_yorum}
                             """
                         
                     except Exception as e:
@@ -389,7 +388,7 @@ with main_col:
                     hide_index=True
                 )
                 
-                st.info("💡 **İpucu:** Detaylı Gemini ve Groq raporu almak istediğiniz hisseyi soldaki 'Tek Hisse Analizi' menüsünden aratabilirsiniz.")
+                st.info("💡 **İpucu:** Detaylı Gemini ve ollama raporu almak istediğiniz hisseyi soldaki 'Tek Hisse Analizi' menüsünden aratabilirsiniz.")
 
     elif secim == "BIST30 Tarama":
 
@@ -497,11 +496,8 @@ with main_col:
             
             # Sadece sinyal çıkarsa kullanılacak olan botları baştan tanımlıyoruz
             gemini_bot = Gemini(api_key=kullanici_api_key)
-            try:
-                groq_bot = GroqDenetci(api_key=groq_api_key, model="llama-3.1-8b-instant")
-            except Exception as e:
-                st.error(f"Groq'a ulaşılamadı! {e}")
-                st.stop()
+            
+            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:20b")
 
             # 1. AŞAMA: Hızlı Tarama ve Filtreleme
             for i, sembol in enumerate(bist30_hisseler):
@@ -536,7 +532,7 @@ with main_col:
                     
                     with st.expander(f"📌 {clean_symbol} | Yakalanan Sinyal: {mesaj}", expanded=False):
                         try:
-                            df = df.ffill().bfill().fillna(0)    
+                            df = df.ffill().bfill()    
                             st.info(f"{clean_symbol} için yapay zeka ajanları çalışıyor, lütfen bekleyin...")
                             
                             # PyTorch Sayısal Tahmin
@@ -556,7 +552,7 @@ with main_col:
                             # Haberler ve LLM Raporları
                             haberler_listesi = haber_cek_web(clean_symbol)
                             analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor, fib_200, son_sbs)
-                            agresif_yorum = groq_bot(df, analiz_sonucu,ai_rapor,fib_20, son_sbs)
+                            agresif_yorum = ollama_bot(df, analiz_sonucu,ai_rapor,fib_20, son_sbs)
                             
                             # Metrikleri Göster
                             c1, c2, c3, c4, c5 = st.columns(5)
@@ -570,7 +566,7 @@ with main_col:
                             c5.metric("Alım Baskısı (SBS)", f"%{son_sbs:.1f}", sbs_delta)
                             
                             # Raporları Sekmeler Halinde Göster
-                            tab1, tab2 = st.tabs(["📄 Analist (Gemini)", "🛡️ Denetçi (Groq)"])
+                            tab1, tab2 = st.tabs(["📄 Analist (Gemini)", "🛡️ Denetçi (ollama)"])
                             with tab1:
                                 st.markdown(analiz_sonucu)
                             with tab2:
@@ -627,6 +623,7 @@ def chat_bolumu():
     if prompt := st.chat_input("Borsa hakkında bir şey sor..."):
         # Kullanıcı mesajını ekle ve ekrana bas
         st.session_state.chat_gecmisi.append({"role": "user", "content": prompt})
+        st.session_state.chat_gecmisi = st.session_state.chat_gecmisi[-10:]
         with chat_container:
             with st.chat_message("user"):
                 st.write(prompt)
@@ -639,19 +636,11 @@ def chat_bolumu():
                     aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Aktif analiz yok.")
                     haber_hafizasi = get_memory_for_llm(limit=5)
                     
-                    sistem_mesaji = f"""
-                    Sen uzman bir borsa asistanısın. 
-                    Şu an ekranda şu hisse analiz ediliyor: {aktif_baglam}
-                    
-                    Ayrıca hafızanda şu geçmiş haberler var:
-                    {haber_hafizasi}
-                    
-                    Kullanıcının sorusunu bu bağlamda cevapla.
-                    """
-                    
                     try:
-                        chat_bot = GroqChat(api_key=groq_api_key)
-                        cevap = chat_bot.generate(st.session_state.chat_gecmisi, sistem_mesaji)
+                        chat_bot = OllamaChat(api_key=ollama_api_key)
+                        cevap = chat_bot.generate(st.session_state.chat_gecmisi, 
+                                                  aktif_baglam=aktif_baglam,
+                                                  haber_hafizasi=haber_hafizasi)
                         st.write(cevap)
                         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
                     except Exception as e:

@@ -6,7 +6,6 @@ scikit-learn
 python-dotenv
 google-genai
 streamlit>=1.37.0
-groq
 altair<5
 pyarrow==14.0.2
 matplotlib

@@ -1,7 +1,7 @@
 from google import genai
-from groq import Groq
 import time
 import pandas as pd     
+import requests
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -164,11 +164,12 @@ class Gemini(BaseLLM):
                 time.sleep(5)
         
         return "⚠️ Gemini API'ye şu an ulaşılamıyor. Lütfen internet bağlantınızı veya API limitinizi (Quota) kontrol edin."
-class GroqDenetci(BaseLLM):
+class OllamaAgresif(BaseLLM):
     
-    def __init__(self,api_key,model="llama-3.1-8b-instant"):
-        self.model=model
-        self.client=Groq(api_key=api_key)
+    def __init__(self,api_key,model="gpt-oss:20b"):
+        self.model = model
+        self.apı_key = api_key
+        self.base_url = "https://ollama.com/api/chat"  # cloud
         
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
@@ -272,24 +273,43 @@ class GroqDenetci(BaseLLM):
         user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
         return f"{gemini_prompt}\n\n{user_content}"
     
-    def generate(self, prompt):
+    def generate(self, df,analiz_sonucu,ai_rapor,fib_20,sbs):
+        system_prompt, user_prompt = self.build_prompt(
+            df,analiz_sonucu,ai_rapor,fib_20,sbs
+        )
+        payload = {
+            "model":self.model,
+            "messages":[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.35,
+            "max_tokens": 1800,
+            "top_p": 0.9,
+            "stream": False
+        }
+        headers = {
+            "Authorization":f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
         try:
-            chat_completion = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model=self.model,
-                temperature=0.4, # Mallığı bitiren altın ayar burası!
-                max_tokens=4096 # Cevabı kısa tutmaya zorluyoruz
-            )
-            res = chat_completion.choices[0].message.content.strip()
-            return res
+            response = requests.post(self.base_url, json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                return f"Apı hatası: {response.text}"
+            
+            data = response.json()
+
+            return data["message"]["content"].strip()
         
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
 
-class GroqChat(BaseLLM):
-    def __init__(self, api_key, model="llama-3.1-8b-instant"):
+class OllamaChat(BaseLLM):
+    def __init__(self,api_key,model="gpt-oss:20b"):
         self.model = model
-        self.client = Groq(api_key=api_key)
+        self.apı_key = api_key
+        self.base_url = "https://ollama.com/api/chat"  # cloud
         
     def generate(self, mesaj_gecmisi, aktif_baglam=""):
         # System prompt'unu dinamik hale getiriyoruz
@@ -307,13 +327,27 @@ class GroqChat(BaseLLM):
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(mesaj_gecmisi)
         
+        payload={
+            "model": self.model,
+            "message": messages,
+            "temperature": 0.6,
+            "max_tokens": 512,
+            "stream": False 
+        }
+        headers ={
+            "Authorization":f"Bearer {self.apı_key}",
+            "Content-Type":"application/json"
+        }
+        
         try:
-            chat_completion = self.client.chat.completions.create(
-                messages=messages, # Artık sadece sabit metni değil, tüm geçmişi yolluyoruz!
-                model=self.model,
-                temperature=0.6, 
-                max_tokens=512
-            )
-            return chat_completion.choices[0].message.content.strip()
+            response = requests.post(self.base_url, json=payload, headers=headers)
+
+            if response.status_code != 200:
+                return f"⚠️ API Hatası: {response.text}"
+
+            data = response.json()
+
+            return data["message"]["content"].strip()
+
         except Exception as e:
             return f"⚠️ Chat Bağlantı Hatası: {e}"
