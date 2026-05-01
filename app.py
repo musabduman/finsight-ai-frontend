@@ -223,7 +223,7 @@ with main_col:
 
                         if ollama_api_key:
                             my_bar.progress(90, text="ollama analizi denetliyor...")
-                            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="deepseak-v4-flash")
+                            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
                             agresif_yorum = ollama_bot.generate(df_kısa, analiz_sonucu,ai_rapor, fib_20, son_sbs)
                         else:
                             # ollama yoksa direkt Gemini sonucunu bas
@@ -497,7 +497,7 @@ with main_col:
             # Sadece sinyal çıkarsa kullanılacak olan botları baştan tanımlıyoruz
             gemini_bot = Gemini(api_key=kullanici_api_key)
             
-            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="deepseak-v4-flash")
+            ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
 
             # 1. AŞAMA: Hızlı Tarama ve Filtreleme
             for i, sembol in enumerate(bist30_hisseler):
