@@ -2,6 +2,7 @@ from google import genai
 import time
 import pandas as pd     
 import requests
+from hafıza import save_to_memory, load_memory, get_memory_for_llm
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -17,7 +18,8 @@ class Gemini(BaseLLM):
     def __init__(self,api_key,model="models/gemini-flash-latest"):
         self.client=genai.Client(api_key=api_key)
         self.model=model
-        
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+
         self.akademik_referans = """
         REFERANS ÇALIŞMA: BİST 100 Endeksinin Spektral Analiz Yöntemiyle İncelenmesi (Bekçioğlu vd., 2018).
         STRATEJİK BULGULAR:
@@ -79,8 +81,12 @@ class Gemini(BaseLLM):
         4. Aİ BOTU YARDIMI:
         {ai_rapor}
         (bu rapor tamamen sayısal verilerle hesaplanmıştır bunU AYNEN YAZDIR ve yorumunda kullan!)
-
-        5. MATEMATİKSEL HESAPLAR:    
+        
+        5. EN SON BEŞ BİST HABERLERİ:
+        {self.haber_hafizasi}
+        (Bu haberleri pozitif negatif olarak değerlendir ve eğer bu haberler arasında istenilen hisse hakkında bir haber varsa yorumunda kullan.)
+        
+        6. MATEMATİKSEL HESAPLAR:    
         {matematiksel_gerceklik}
         (Bu hesaplar hedef fiyat belirlemen ve alım/satım oranı ile yorumunu gerçekliğe daha da yakınlaştırmak için yapılmıştır.)
 
@@ -170,7 +176,8 @@ class OllamaAgresif(BaseLLM):
         self.model = model
         self.api_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
-        
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
         - BİST 100'de 15, 20, 36, 45 ve 60 günlük periyotlarda matematiksel dönüşler (ritimler) vardır.
@@ -223,13 +230,14 @@ class OllamaAgresif(BaseLLM):
             - Sentetik Baskı Skoru (SBS): {sbs} (En önemli momentum göstergen budur! 70 üstü füzeye bin demektir.)
             - 20 Günlük Kısa Vade Fibonacci Hedefi: {fib_20['fib_618']}
             - RSI, MACD, MACD_signal, SMA 20 / SMA 50, Bollinger Band Width, Hacim, Volatilite, Pivot seviyeleri, {ai_rapor}
-
+            - En son bist hakkındaki 5 haber eğer aralarında yorumu istenilen hissede varsa yorumunda kullan {self.haber_hafizasi}
+            
             Karar Mantığı:
             - SBS %70 üzerinde ve hacim artışı varsa agresif AL.
             - Bollinger sıkışması + hacim artışı → KIRILIM BEKLENTİSİ (AL veya RİSKLİ AL DİĞER VERİLERDE İYİ DURUMDAYSA).
             - RSI 55–80 bandında ve fiyat SMA20 üzerinde ise momentum pozitif kabul edilir.
             - MACD_signal negatif olsa bile MACD pozitifse bu durumu "dinlenme" olarak değerlendir, skoru sert düşürme.
-
+            
             Kesinlikle:
             - Uzun vadeli yatırımcı gibi davranma.
             - Gereksiz “TUT” kararı verme.
@@ -310,7 +318,8 @@ class OllamaChat(BaseLLM):
         self.model = model
         self.api_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
-        
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+    
     def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
         # BaseLLM uyumu için build_prompt implement edildi
         system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
@@ -318,7 +327,7 @@ class OllamaChat(BaseLLM):
         1. Borsa ve finans terimleriyle ilgili soruları net ve anlaşılır cevapla. Kısa cevaplar ver.
         2. Kesinlikle yatırım tavsiyesi verme.
         3. Ekrandaki analizle ilgili sorularda aşağıdaki bağlamı kullan.
-
+        4. Elindeki bist 100 haberleri şu şekilde {self.haber_hafizasi}
         Ekranda Açık Olan Analiz Bağlamı:
         {aktif_baglam if aktif_baglam else 'Henüz analiz başlatılmamış.'}
         """

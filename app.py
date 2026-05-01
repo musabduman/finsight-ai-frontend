@@ -39,7 +39,7 @@ secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi",
 st.sidebar.info("""
 **Aktif Ajanlar:**
 * 🧠 Gemini 1.5 Flash (Analist)
-* 🛡️ ollama (Agresif Analist)
+* 🛡️ Ollama (Agresif Analist)
 * 🧮 PyTorch (Kahin) 
 * 📚 Hafıza
 """)
@@ -634,13 +634,11 @@ def chat_bolumu():
                 with st.spinner("Düşünüyorum..."):
                     # Bağlamları topla
                     aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Aktif analiz yok.")
-                    haber_hafizasi = get_memory_for_llm(limit=5)
                     
                     try:
                         chat_bot = OllamaChat(api_key=ollama_api_key)
                         cevap = chat_bot.generate(st.session_state.chat_gecmisi, 
-                                                  aktif_baglam=aktif_baglam,
-                                                  haber_hafizasi=haber_hafizasi)
+                                                  aktif_baglam=aktif_baglam,)
                         st.write(cevap)
                         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
                     except Exception as e:
