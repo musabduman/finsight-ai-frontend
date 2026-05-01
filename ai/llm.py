@@ -3,7 +3,7 @@ import time
 import pandas as pd     
 import requests
 from hafıza import save_to_memory, load_memory, get_memory_for_llm
-from ollama import Client as OllamaClient
+from ollama import Client 
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
