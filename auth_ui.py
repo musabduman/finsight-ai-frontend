@@ -91,9 +91,9 @@ def login_sidebar():
                     help="Google AI Studio'dan alabilirsiniz."  # <-- İşte o soru işaretini çıkaran sihirli kod
             )
             groq = st.text_input(
-                label="Groq API Key (Agresif Yorumcu)",
+                label="Ollama API Key (Agresif Yorumcu)",
                 type="password",
-                help="Groq'un kendi sitesinden alabilirsiniz." # <-- Groq için olan ipucu
+                help="Ollama.com'dan alabilirsiniz." # <-- Ollama için olan ipucu
             )
 
             if st.button("Hesabı Oluştur"):
@@ -144,31 +144,31 @@ def login_sidebar():
                     res = requests.post(f"{BASE_URL}/check_api_keys", json={"email": st.session_state.user_email})
                     if res.status_code == 200:
                         st.session_state.api_status = res.json()
-                    else:
-                        st.session_state.api_status = {"gemini_valid": False, "groq_valid": False}
+                    #else:
+                        #st.session_state.api_status = {"gemini_valid": False, "ollama_valid": False}
                 except:
-                    st.session_state.api_status = {"gemini_valid": False, "groq_valid": False}
+                    st.session_state.api_status = {"gemini_valid": False, "ollama_valid": False}
 
                 # Güvenli veri çekimi
-                api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
+                api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": False}
                 g_durum = api_veri.get("gemini_valid", False)
-                gr_durum = api_veri.get("groq_valid", False)
+                gr_durum = api_veri.get("ollama_valid", False)
 
                 # BUNLAR KUTUNUN İÇİNDE (with bloğunda) OLDUĞU İÇİN YANA GİDER
                 st.write(f"**{'🟢' if g_durum else '🔴'} Gemini API**")
-                st.write(f"**{'🟢' if gr_durum else '🔴'} Groq API**")
+                st.write(f"**{'🟢' if gr_durum else '🔴'} Ollama API**")
 
                 status.update(label="Test tamamlandı!", state="complete", expanded=False)
         else:
             # Hafızadaki sonuçları göster
-            api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
+            api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": False}
             g_durum = api_veri.get("gemini_valid", False)
-            gr_durum = api_veri.get("groq_valid", False)
+            gr_durum = api_veri.get("ollama_valid", False)
 
             with st.sidebar.status("Test tamamlandı!", state="complete", expanded=False):
                 # BUNLAR DA KUTUNUN İÇİNDE!
                 st.write(f"**{'🟢' if g_durum else '🔴'} Gemini API**")
-                st.write(f"**{'🟢' if gr_durum else '🔴'} Groq API**")
+                st.write(f"**{'🟢' if gr_durum else '🔴'} Ollama API**")
 
         # Uyarı mesajı eğer anahtarlar boşsa (Kutunun altında kalır ama yan menüde olur)
         if not st.session_state.api_status or not st.session_state.api_status.get("gemini_valid"):
