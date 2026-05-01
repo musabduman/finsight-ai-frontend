@@ -85,12 +85,12 @@ def login_sidebar():
                 </div>
                 """, unsafe_allow_html=True)
 
-            n_pw2 = st.text_input("Şifre (Tekrar)", type="password", key="reg_pass2")
+            n_pw2 = st.text_input("Şifre (Tekrar)", type="password", key="reg_pass2")                           
             gemini = st.text_input( label="Gemini API Key",
                     type="password",
                     help="Google AI Studio'dan alabilirsiniz."  # <-- İşte o soru işaretini çıkaran sihirli kod
             )
-            groq = st.text_input(
+            ollama = st.text_input(
                 label="Ollama API Key (Agresif Yorumcu)",
                 type="password",
                 help="Ollama.com'dan alabilirsiniz." # <-- Ollama için olan ipucu
@@ -110,7 +110,7 @@ def login_sidebar():
                         "email": n_email,
                         "password": n_pw,
                         "api_key": gemini,  # Kendi kodundaki değişkenlerin
-                        "groq_api_key": groq
+                        "ollama_api_key": ollama
                     }
 
                     # 2. İstek de TAM OLARAK burada, payload'ın hemen altında atılıyor
