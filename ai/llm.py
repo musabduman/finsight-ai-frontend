@@ -166,7 +166,7 @@ class Gemini(BaseLLM):
         return "⚠️ Gemini API'ye şu an ulaşılamıyor. Lütfen internet bağlantınızı veya API limitinizi (Quota) kontrol edin."
 class OllamaAgresif(BaseLLM):
     
-    def __init__(self,api_key,model="gpt-oss:20b"):
+    def __init__(self,api_key,model="deepseak-v4-flash"):
         self.model = model
         self.apı_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
@@ -306,7 +306,7 @@ class OllamaAgresif(BaseLLM):
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
 
 class OllamaChat(BaseLLM):
-    def __init__(self,api_key,model="gpt-oss:20b"):
+    def __init__(self,api_key,model="deepseak-v4-flash"):
         self.model = model
         self.apı_key = api_key
         self.base_url = "https://ollama.com/api/chat"  # cloud
