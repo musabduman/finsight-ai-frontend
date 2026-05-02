@@ -3,7 +3,8 @@ from datetime import datetime
 from pinecone import Pinecone, ServerlessSpec
 from sentence_transformers import SentenceTransformer
 import uuid
-
+import feedparser
+import streamlit as st
 import os
 from dotenv import load_dotenv
 
@@ -73,17 +74,22 @@ def save_to_memory(new_data):
         print(f"Bulut hafızaya kaydetme hatası: {e}")
         return None
 
-def get_memory_for_llm(query, limit=5):
+def get_memory_for_llm(query, limit=5,hisse_filtresi=None):
     """LLM'e bağlam vermek için, sorulan soruyla EN ALAKALI geçmiş verileri getirir."""
     try:
         # 1. Önce kullanıcının veya LLM'in sorusunu vektöre çeviriyoruz
         query_vector = model.encode(query).tolist()
         
+        filtre = None
+        if hisse_filtresi:
+            filtre = {"hisse": {"$eq": hisse_filtresi}}
+
         # 2. Pinecone'da bu vektöre en çok benzeyen haberleri arıyoruz (İşte RAG budur!)
         search_results = index.query(
             vector=query_vector,
             top_k=limit,
-            include_metadata=True
+            include_metadata=True,
+            filtre=filtre
         )
         
         matches = search_results.get('matches', [])
@@ -92,13 +98,28 @@ def get_memory_for_llm(query, limit=5):
             return "İlgili geçmiş veri bulunamadı."
             
         context_text = f"--- '{query}' İLE İLGİLİ GEÇMİŞ HAFIZA ---\n"
+        
         for match in matches:
             meta = match['metadata']
-            skor = round(match['score'], 2) # Benzerlik skoru
-            context_text += f"[{meta['tarih']}] {meta['hisse']}: {meta['ozet']} (Duygu: {meta['duygu']}) [Alaka Skoru: {skor}]\n"
+            skor = round(match['score'], 2)
+            kaynak = meta.get('kaynak', 'Bilinmeyen Kaynak')
+            link = meta.get('link', '#')
+            
+            # LLM'in okuyacağı format (Kaynak bilgisiyle birlikte)
+            context_text += f"Tarih: {meta['tarih']} | Hisse: {meta['hisse']} | Kaynak: {kaynak}\n"
+            context_text += f"Haber: {meta['ozet']}\n"
+            context_text += f"Orijinal Link: {link}\n"
+            context_text += f"(Alaka Skoru: {skor})\n"
+            context_text += "-" * 30 + "\n"
             
         return context_text
-        
+    
     except Exception as e:
         print(f"Hafıza okuma hatası: {e}")
         return "Hafızaya ulaşılamadı."
+    
+@st.cache_data(ttl=1800) 
+def anlik_hisse_haberi_cek(sembol):
+    print(f"🌐 Sadece {sembol} için güncel web taraması yapılıyor...") 
+    
+    arama_url = f"https://news.google.com/rss/search?q={sembol}+hisse+KAP+BİST&hl=tr&gl=TR&ceid=TR:tr"

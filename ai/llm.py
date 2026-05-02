@@ -2,7 +2,7 @@ from google import genai
 import time
 import pandas as pd     
 import requests
-from hafıza import save_to_memory, load_memory, get_memory_for_llm
+from hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
 from ollama import Client 
 
 class BaseLLM:
@@ -19,7 +19,7 @@ class Gemini(BaseLLM):
     def __init__(self,api_key,model="models/gemini-flash-latest"):
         self.client=genai.Client(api_key=api_key)
         self.model=model
-        self.haber_hafizasi = get_memory_for_llm(limit=5)
+        self.haber_hafizasi = get_memory_for_llm("BIST Hisse haberleri",limit=5)
 
         self.akademik_referans = """
         REFERANS ÇALIŞMA: BİST 100 Endeksinin Spektral Analiz Yöntemiyle İncelenmesi (Bekçioğlu vd., 2018).
@@ -181,7 +181,7 @@ class OllamaAgresif(BaseLLM):
             host="https://ollama.com",
             headers={'Authorization': f'Bearer {self.api_key}'}
         )
-        self.haber_hafizasi = get_memory_for_llm(limit=5)
+        self.haber_hafizasi = get_memory_for_llm("BIST Hisse haberleri",limit=5)
 
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
@@ -190,7 +190,7 @@ class OllamaAgresif(BaseLLM):
         - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir.
         """
     
-    def build_prompt(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
+    def build_prompt(self, df, ai_rapor, fib_20, sbs):
         
         def safe_get(series, key, default="Yok"):
             try:
@@ -284,12 +284,11 @@ class OllamaAgresif(BaseLLM):
             (AL / RİSKLİ AL / TUT / SAT / RİSKLİ SAT )
 
             Neden? (2–3 net cümleyle açıkla)"""
-        user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
-        return gemini_prompt, user_content
+        return gemini_prompt
     
-    def generate(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
+    def generate(self, df, ai_rapor, fib_20, sbs):
         system_prompt, user_prompt = self.build_prompt(
-            df, analiz_sonucu, ai_rapor, fib_20, sbs
+            df, ai_rapor, fib_20, sbs
         )
         
         messages = [
@@ -323,7 +322,7 @@ class OllamaChat(BaseLLM):
             host="https://ollama.com",
             headers={'Authorization': f'Bearer {self.api_key}'}
         )
-        self.haber_hafizasi = get_memory_for_llm(limit=5)
+        self.haber_hafizasi = get_memory_for_llm("BIST haberleri listesi",limit=5)
     
     def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
         system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
@@ -352,7 +351,8 @@ class OllamaChat(BaseLLM):
                 options={
                     "temperature": 0.6,
                     "num_predict": 512
-                }
+                },
+                tools=[anlik_hisse_haberi_cek,get_memory_for_llm]
             )
             
             return response['message']['content'].strip()

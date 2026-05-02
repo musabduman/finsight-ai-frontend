@@ -6,7 +6,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import auth_ui
 
-from hafıza import save_to_memory, load_memory, get_memory_for_llm
+from hafıza import save_to_memory, get_memory_for_llm, anlik_hisse_haberi_cek
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
@@ -104,44 +104,6 @@ def get_stock_data(symbol):
     except Exception as e:
         st.error(f"⚠️ '{symbol}' için veri alınamadı: {e}")
         return None, None, None
-    
-def haber_cek_web(symbol):
-    haberler_listesi = []
-    try:
-        ticker = yf.Ticker(symbol)
-        news = ticker.news
-
-        if not news:
-            return ["Son güncel haber bulunamadı."]
-
-        for n in news[:5]:
-            try:
-                # ── YENİ FORMAT: yfinance >= 0.2.50 ──
-                if "content" in n and isinstance(n["content"], dict):
-                    icerik = n["content"]
-                    baslik = icerik.get("title", "Başlık yok")
-                    kaynak = (icerik.get("provider") or {}).get("displayName", "Bilinmiyor")
-                    tarih_raw = icerik.get("pubDate", "")
-                    # "2024-01-15T10:30:00Z" → "2024-01-15"
-                    tarih = tarih_raw[:10] if tarih_raw else "Tarih Yok"
-
-                # ── ESKİ FORMAT: yfinance < 0.2.50 ──
-                else:
-                    baslik = n.get("title", "Başlık yok")
-                    kaynak = n.get("publisher", "Bilinmiyor")
-                    tarih_unix = n.get("providerPublishTime")
-                    tarih = time.strftime("%Y-%m-%d", time.localtime(tarih_unix)) \
-                            if tarih_unix else "Tarih Yok"
-
-                haberler_listesi.append(f"- [{tarih}] {kaynak}: {baslik}")
-
-            except Exception:
-                continue  # Tek bir haber parse edilemezse diğerine geç
-
-    except Exception as e:
-        return [f"Haber verisi çekilemedi. Detay: {e}"]
-
-    return haberler_listesi if haberler_listesi else ["Haber bulunamadı."]
 
 st.title("🚀 Borsa İstanbul Analisti")
 st.markdown("---")
@@ -215,16 +177,29 @@ with main_col:
                             st.warning("⚠️ Hisse verisi çok yeni veya eksik olduğu için Kahin (PyTorch) analiz yapamadı.")
                         
                         my_bar.progress(70, text="Gemini yorumunu hazırlıyor...")
-                        haberler_listesi=haber_cek_web(clean_symbol)
+                        
+                        anlik_haber=anlik_hisse_haberi_cek(clean_symbol)
+                        
+                        sorgu = f"{clean_symbol} hissesi ile ilgili son KAP bildirimleri, şirket gelişmeleri ve güncel haberler"
+                        rag_hafıza_metni=get_memory_for_llm(query=sorgu,limit=5,hisse_filtresi=clean_symbol)
+                        
+                        haberler_listesi=f"""
+                        🔴 ANLIK CANLI HABERLER (Google News):
+                        {anlik_haber}
+
+                        📚 GEÇMİŞ RAG HAFIZASI (Pinecone):
+                        {rag_hafıza_metni}
+                        """
+
                         df_kısa=df.tail(30)
                         temel = get_temel_hesapla(clean_symbol)
 
-                        analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, haberler_listesi, ai_rapor, fib_200, son_sbs)
+                        analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, ai_rapor, fib_200, son_sbs)
 
                         if ollama_api_key:
                             my_bar.progress(90, text="ollama analizi denetliyor...")
                             ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
-                            agresif_yorum = ollama_bot.generate(df_kısa, analiz_sonucu,ai_rapor, fib_20, son_sbs)
+                            agresif_yorum = ollama_bot.generate(df_kısa, ai_rapor, fib_20, son_sbs)
                         else:
                             # ollama yoksa direkt Gemini sonucunu bas
                             agresif_yorum="ℹ️ Ollama API anahtarı girilmediği için agresif yorum pasif."
@@ -550,9 +525,21 @@ with main_col:
                             temel = get_temel_hesapla(clean_symbol)
                             
                             # Haberler ve LLM Raporları
-                            haberler_listesi = haber_cek_web(clean_symbol)
+                            sorgu = f"{clean_symbol} hissesi ile ilgili son KAP bildirimleri, şirket gelişmeleri ve güncel haberler"
+                            
+                            anlik_haber=anlik_hisse_haberi_cek(clean_symbol)
+                            rag_hafıza_metni=get_memory_for_llm(query=sorgu,limit=5,hisse_filtresi=clean_symbol)
+                            
+                            haberler_listesi=f"""
+                            🔴 ANLIK CANLI HABERLER (Google News):
+                            {anlik_haber}
+
+                            📚 GEÇMİŞ RAG HAFIZASI (Pinecone):
+                            {rag_hafıza_metni}
+                            """
+
                             analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor, fib_200, son_sbs)
-                            agresif_yorum = ollama_bot(df, analiz_sonucu,ai_rapor,fib_20, son_sbs)
+                            agresif_yorum = ollama_bot(df,ai_rapor,fib_20, son_sbs)
                             
                             # Metrikleri Göster
                             c1, c2, c3, c4, c5 = st.columns(5)
@@ -585,24 +572,23 @@ with main_col:
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
     elif secim == "Haber Akışı":
-        st.title("📈 Haber Analizi")
+        st.title("📰 Piyasa Gündemi")
+        st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
         
-        if st.sidebar.button("Analizi Başlat"):
-            with st.spinner("Analiz ediliyor..."):
-                response = requests.get("http://localhost:5678/webhook-test/haber-analiz")
-                if response.status_code == 200:
-                    # BU KISIM ÇOK SADELEŞTİ:
-                    data = response.json()
-                    df = save_to_memory(data) # Veriyi gönder, o halletsin
-                    
-                    st.dataframe(df)
-                    st.success("Analiz tamamlandı ve hafızaya işlendi.")
-
-        # Hafızayı ekranda her zaman göster
-        st.subheader("📚 Hafıza (Geçmiş Analizler)")
-        history_df = load_memory()
-        if history_df is not None:
-            st.dataframe(history_df)
+        gundem_sorgusu = st.text_input("Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):", value="Borsa İstanbul şirket gelişmeleri")
+        
+        if st.sidebar.button("Haberleri Getir"):
+            with st.spinner("Hafıza taranıyor..."):
+                
+                # Sadece RAG hafızasından haberleri çekip listeliyoruz
+                hafiza_haberleri = get_memory_for_llm(query=gundem_sorgusu, limit=10)
+                
+                if "bulunamadı" in hafiza_haberleri.lower():
+                    st.warning("Hafızada bu konuyla ilgili güncel haber bulunamadı.")
+                else:
+                    st.success("Haberler başarıyla çekildi!")
+                    # Markdown formatında şıkça ekrana bas
+                    st.markdown(hafiza_haberleri)
 
 @st.fragment
 def chat_bolumu():
