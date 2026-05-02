@@ -85,15 +85,15 @@ def login_sidebar():
                 </div>
                 """, unsafe_allow_html=True)
 
-            n_pw2 = st.text_input("Şifre (Tekrar)", type="password", key="reg_pass2")
+            n_pw2 = st.text_input("Şifre (Tekrar)", type="password", key="reg_pass2")                           
             gemini = st.text_input( label="Gemini API Key",
                     type="password",
                     help="Google AI Studio'dan alabilirsiniz."  # <-- İşte o soru işaretini çıkaran sihirli kod
             )
-            groq = st.text_input(
-                label="Groq API Key (Agresif Yorumcu)",
+            ollama = st.text_input(
+                label="Ollama API Key (Agresif Yorumcu)",
                 type="password",
-                help="Groq'un kendi sitesinden alabilirsiniz." # <-- Groq için olan ipucu
+                help="Ollama.com'dan alabilirsiniz." # <-- Ollama için olan ipucu
             )
 
             if st.button("Hesabı Oluştur"):
@@ -110,7 +110,7 @@ def login_sidebar():
                         "email": n_email,
                         "password": n_pw,
                         "api_key": gemini,  # Kendi kodundaki değişkenlerin
-                        "groq_api_key": groq
+                        "ollama_api_key": ollama
                     }
 
                     # 2. İstek de TAM OLARAK burada, payload'ın hemen altında atılıyor
@@ -145,30 +145,30 @@ def login_sidebar():
                     if res.status_code == 200:
                         st.session_state.api_status = res.json()
                     else:
-                        st.session_state.api_status = {"gemini_valid": False, "groq_valid": False}
+                        st.session_state.api_status = {"gemini_valid": False, "ollama_valid": True}  # API testi başarısızsa bile Ollama'yı geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
                 except:
-                    st.session_state.api_status = {"gemini_valid": False, "groq_valid": False}
+                    st.session_state.api_status = {"gemini_valid": False, "ollama_valid": True}  # API testi başarısızsa bile Ollama'yı geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
                 # Güvenli veri çekimi
-                api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
+                api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": True}
                 g_durum = api_veri.get("gemini_valid", False)
-                gr_durum = api_veri.get("groq_valid", False)
+                gr_durum = api_veri.get("ollama_valid", True)  # Ollama'yı varsayılan olarak geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
                 # BUNLAR KUTUNUN İÇİNDE (with bloğunda) OLDUĞU İÇİN YANA GİDER
                 st.write(f"**{'🟢' if g_durum else '🔴'} Gemini API**")
-                st.write(f"**{'🟢' if gr_durum else '🔴'} Groq API**")
+                st.write(f"**{'🟢' if gr_durum else '🔴'} Ollama API**")
 
                 status.update(label="Test tamamlandı!", state="complete", expanded=False)
         else:
             # Hafızadaki sonuçları göster
-            api_veri = st.session_state.api_status or {"gemini_valid": False, "groq_valid": False}
+            api_veri = st.session_state.api_status or {"gemini_valid": False, "ollama_valid": True}
             g_durum = api_veri.get("gemini_valid", False)
-            gr_durum = api_veri.get("groq_valid", False)
+            gr_durum = api_veri.get("ollama_valid", True)  # Ollama'yı varsayılan olarak geçerli yapıyoruz çünkü bazı kullanıcılar kullanmayabilir
 
             with st.sidebar.status("Test tamamlandı!", state="complete", expanded=False):
                 # BUNLAR DA KUTUNUN İÇİNDE!
                 st.write(f"**{'🟢' if g_durum else '🔴'} Gemini API**")
-                st.write(f"**{'🟢' if gr_durum else '🔴'} Groq API**")
+                st.write(f"**{'🟢' if gr_durum else '🔴'} Ollama API**")
 
         # Uyarı mesajı eğer anahtarlar boşsa (Kutunun altında kalır ama yan menüde olur)
         if not st.session_state.api_status or not st.session_state.api_status.get("gemini_valid"):

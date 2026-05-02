@@ -1,7 +1,9 @@
 from google import genai
-from groq import Groq
 import time
 import pandas as pd     
+import requests
+from hafıza import save_to_memory, load_memory, get_memory_for_llm
+from ollama import Client 
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -17,7 +19,8 @@ class Gemini(BaseLLM):
     def __init__(self,api_key,model="models/gemini-flash-latest"):
         self.client=genai.Client(api_key=api_key)
         self.model=model
-        
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+
         self.akademik_referans = """
         REFERANS ÇALIŞMA: BİST 100 Endeksinin Spektral Analiz Yöntemiyle İncelenmesi (Bekçioğlu vd., 2018).
         STRATEJİK BULGULAR:
@@ -79,8 +82,12 @@ class Gemini(BaseLLM):
         4. Aİ BOTU YARDIMI:
         {ai_rapor}
         (bu rapor tamamen sayısal verilerle hesaplanmıştır bunU AYNEN YAZDIR ve yorumunda kullan!)
-
-        5. MATEMATİKSEL HESAPLAR:    
+        
+        5. EN SON BEŞ BİST HABERLERİ:
+        {self.haber_hafizasi}
+        (Bu haberleri pozitif negatif olarak değerlendir ve eğer bu haberler arasında istenilen hisse hakkında bir haber varsa yorumunda kullan.)
+        
+        6. MATEMATİKSEL HESAPLAR:    
         {matematiksel_gerceklik}
         (Bu hesaplar hedef fiyat belirlemen ve alım/satım oranı ile yorumunu gerçekliğe daha da yakınlaştırmak için yapılmıştır.)
 
@@ -164,20 +171,26 @@ class Gemini(BaseLLM):
                 time.sleep(5)
         
         return "⚠️ Gemini API'ye şu an ulaşılamıyor. Lütfen internet bağlantınızı veya API limitinizi (Quota) kontrol edin."
-class GroqDenetci(BaseLLM):
+class OllamaAgresif(BaseLLM):
     
-    def __init__(self,api_key,model="llama-3.1-8b-instant"):
-        self.model=model
-        self.client=Groq(api_key=api_key)
-        
+    def __init__(self, api_key, model="gpt-oss:120b-cloud"):
+        self.model = model
+        self.api_key = api_key
+        # ollama kütüphanesi için Client objesini oluşturuyoruz
+        self.client = Client(
+            host="https://ollama.com",
+            headers={'Authorization': f'Bearer {self.api_key}'}
+        )
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
         - BİST 100'de 15, 20, 36, 45 ve 60 günlük periyotlarda matematiksel dönüşler (ritimler) vardır.
-        - 4.5 ay ve 1 yıllık mevsimsel döngüler ana yön değişimleridir[cite: 607].
-        - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir[cite: 110, 118].
+        - 4.5 ay ve 1 yıllık mevsimsel döngüler ana yön değişimleridir.
+        - Veri durağan (stationary) değilse yapılan analiz geçersiz sayılabilir.
         """
     
-    def build_prompt(self,df,analiz_sonucu,ai_rapor, fib_20, sbs):
+    def build_prompt(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
         
         def safe_get(series, key, default="Yok"):
             try:
@@ -217,18 +230,20 @@ class GroqDenetci(BaseLLM):
             - Gereksiz temkinli olma.
             - Güçlü teknik sinyal varsa “AL” demekten çekinme.
             - Zayıf ama potansiyelli hisselerde “RİSKLİ AL” ifadesini kullan.
+            - Konuşma dilin günlük, samimi bir "bro" tarzında olmalı. Resmiyetten uzak dur.
 
             Kullandığın ana göstergeler:
             - Sentetik Baskı Skoru (SBS): {sbs} (En önemli momentum göstergen budur! 70 üstü füzeye bin demektir.)
             - 20 Günlük Kısa Vade Fibonacci Hedefi: {fib_20['fib_618']}
             - RSI, MACD, MACD_signal, SMA 20 / SMA 50, Bollinger Band Width, Hacim, Volatilite, Pivot seviyeleri, {ai_rapor}
-
+            - En son bist hakkındaki 5 haber eğer aralarında yorumu istenilen hissede varsa yorumunda kullan {self.haber_hafizasi}
+            
             Karar Mantığı:
             - SBS %70 üzerinde ve hacim artışı varsa agresif AL.
             - Bollinger sıkışması + hacim artışı → KIRILIM BEKLENTİSİ (AL veya RİSKLİ AL DİĞER VERİLERDE İYİ DURUMDAYSA).
             - RSI 55–80 bandında ve fiyat SMA20 üzerinde ise momentum pozitif kabul edilir.
             - MACD_signal negatif olsa bile MACD pozitifse bu durumu "dinlenme" olarak değerlendir, skoru sert düşürme.
-
+            
             Kesinlikle:
             - Uzun vadeli yatırımcı gibi davranma.
             - Gereksiz “TUT” kararı verme.
@@ -270,50 +285,77 @@ class GroqDenetci(BaseLLM):
 
             Neden? (2–3 net cümleyle açıkla)"""
         user_content = f"TEKNİK VERİ: {teknik_ozet}\n\nGEMINI RAPORU: {analiz_sonucu}"
-        return f"{gemini_prompt}\n\n{user_content}"
+        return gemini_prompt, user_content
     
-    def generate(self, prompt):
+    def generate(self, df, analiz_sonucu, ai_rapor, fib_20, sbs):
+        system_prompt, user_prompt = self.build_prompt(
+            df, analiz_sonucu, ai_rapor, fib_20, sbs
+        )
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
         try:
-            chat_completion = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
+            # ollama Client üzerinden istek atıyoruz
+            response = self.client.chat(
                 model=self.model,
-                temperature=0.4, # Mallığı bitiren altın ayar burası!
-                max_tokens=4096 # Cevabı kısa tutmaya zorluyoruz
+                messages=messages,
+                options={
+                    "temperature": 0.35,
+                    "top_p": 0.9,
+                    "num_predict": 1800 # max_tokens yerine ollama'da num_predict kullanılır
+                }
             )
-            res = chat_completion.choices[0].message.content.strip()
-            return res
+            
+            return response['message']['content'].strip()
         
         except Exception as e:
             return f"⚠️ Denetçi Bağlantı Hatası: {e}"
 
-class GroqChat(BaseLLM):
-    def __init__(self, api_key, model="llama-3.1-8b-instant"):
+class OllamaChat(BaseLLM):
+    def __init__(self, api_key, model="gpt-oss:120b-cloud"):
         self.model = model
-        self.client = Groq(api_key=api_key)
-        
-    def generate(self, mesaj_gecmisi, aktif_baglam=""):
-        # System prompt'unu dinamik hale getiriyoruz
-        system_prompt = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
+        self.api_key = api_key
+        # ollama kütüphanesi için Client objesini oluşturuyoruz
+        self.client = Client(
+            host="https://ollama.com",
+            headers={'Authorization': f'Bearer {self.api_key}'}
+        )
+        self.haber_hafizasi = get_memory_for_llm(limit=5)
+    
+    def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
+        system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
         Görevlerin:
-        1. Kullanıcının borsa ve finans terimleriyle (örn: FK, PD/DD, RSI nedir) ilgili sorularını net, eğitici ve anlaşılır cevapla. Kısa cevaplar ver. Lafı uzatma!!
+        1. Borsa ve finans terimleriyle ilgili soruları net ve anlaşılır cevapla. Kısa cevaplar ver.
         2. Kesinlikle yatırım tavsiyesi verme.
-        3. Kullanıcı sana ekrandaki analizle ilgili bir şey sorarsa ("Bu yoruma katılıyor musun?", "PyTorch hedefi ne?" gibi), aşağıda sana verilen 'Ekranda Açık Olan Analiz' verilerini kullanarak cevap ver. Eğer bir hata veya eksik görürsen kendi agresif yorumunu katabilirsin.
-
-        Ekranda Açık Olan Mevcut Analiz Bağlamı (Eğer boşsa kullanıcı henüz analiz başlatmamıştır):
-        {aktif_baglam}
+        3. Ekrandaki analizle ilgili sorularda aşağıdaki bağlamı kullan.
+        4. Elindeki bist 100 haberleri şu şekilde {self.haber_hafizasi}
+        5. Konuşma dilin günlük, samimi bir "bro" tarzında olmalı. Resmiyetten uzak dur.
+        
+        Ekranda Açık Olan Analiz Bağlamı:
+        {aktif_baglam if aktif_baglam else 'Henüz analiz başlatılmamış.'}
         """
-        
-        # Groq'un anlayacağı formata çeviriyoruz: Önce Sistem, sonra Sohbet Geçmişi
-        messages = [{"role": "system", "content": system_prompt}]
+        messages = [{"role": "system", "content": system_content}]
         messages.extend(mesaj_gecmisi)
-        
+        return messages 
+    
+    def generate(self, mesaj_gecmisi, aktif_baglam=""):
+        messages = self.build_prompt(mesaj_gecmisi, aktif_baglam)
+            
         try:
-            chat_completion = self.client.chat.completions.create(
-                messages=messages, # Artık sadece sabit metni değil, tüm geçmişi yolluyoruz!
+             # ollama Client üzerinden istek atıyoruz
+            response = self.client.chat(
                 model=self.model,
-                temperature=0.6, 
-                max_tokens=512
+                messages=messages,
+                options={
+                    "temperature": 0.6,
+                    "num_predict": 512
+                }
             )
-            return chat_completion.choices[0].message.content.strip()
+            
+            return response['message']['content'].strip()
+
         except Exception as e:
             return f"⚠️ Chat Bağlantı Hatası: {e}"
