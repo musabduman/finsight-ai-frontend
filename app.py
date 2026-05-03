@@ -252,10 +252,7 @@ with main_col:
                     with tab1:
                         st.markdown(analiz_sonucu)
                     with tab2:
-                        if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
-                            st.error(agresif_yorum)
-                        else:
-                            st.success(agresif_yorum)
+                        st.markdown(agresif_yorum)
                     with tab3:
                         st.dataframe(df.tail(10))
 
