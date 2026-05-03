@@ -1,6 +1,6 @@
 # --- TEMEL KÜTÜPHANELER ---
-numpy==1.26.4
-pandas==2.0.3
+numpy
+pandas
 yfinance
 scikit-learn
 python-dotenv
@@ -9,19 +9,19 @@ feedparser
 
 # --- YAPAY ZEKA VE ARAYÜZ ---
 google-genai
-streamlit>=1.37.0
-altair<5
-pyarrow==14.0.2
+streamlit
+altair
+pyarrow
 matplotlib
 ollama
 
 # --- VEKTÖR VE RAG ---
-pinecone
-sentence-transformers>=2.3.0
-transformers==4.30.0
+pinecone-client
+sentence-transformers
+transformers
 accelerate
 
 # --- PYTORCH (CPU VERSİYONU) ---
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.0.1
-torchvision==0.15.2
+torch
+torchvision

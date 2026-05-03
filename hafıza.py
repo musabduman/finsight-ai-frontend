@@ -13,18 +13,23 @@ load_dotenv()
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = "finsight-memory"
 
-# Pinecone bağlantısı
-pc = Pinecone(api_key=PINECONE_API_KEY)
-
-# Index (Veritabanı Tablosu) yoksa bulutta oluştur
-if INDEX_NAME not in pc.list_indexes().names():
-    print("Bulutta yeni bir vektör hafızası oluşturuluyor...")
-    pc.create_index(
-        name=INDEX_NAME,
-        dimension=384, # Seçtiğimiz embedding modelinin vektör boyutu
-        metric="cosine", # Anlamsal benzerlik ölçümü
-        spec=ServerlessSpec(cloud="aws", region="us-east-1")
-    )
+if not PINECONE_API_KEY:
+    print("⚠️ Pinecone API Anahtarı bulunamadı! Hafıza devre dışı.")
+    pc = None
+    index = None
+    model = None
+else:
+    # Anahtar varsa normal şekilde bağlan / Pinecone bağlantısı
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    # Index (Veritabanı Tablosu) yoksa bulutta oluştur
+    if INDEX_NAME not in pc.list_indexes().names():
+        print("Bulutta yeni bir vektör hafızası oluşturuluyor...")
+        pc.create_index(
+            name=INDEX_NAME,
+            dimension=384, # Seçtiğimiz embedding modelinin vektör boyutu
+            metric="cosine", # Anlamsal benzerlik ölçümü
+            spec=ServerlessSpec(cloud="aws", region="us-east-1")
+        )
 
 index = pc.Index(INDEX_NAME)
 
