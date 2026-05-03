@@ -566,7 +566,7 @@ with main_col:
                             st.error(f"⚠️ {clean_symbol} analizi sırasında bir hata oluştu (Muhtemelen API limiti aşıldı). Detay: {e}")
                     time.sleep(7)
                 analiz_bar.empty()
-                st.balloons()
+                st.balloons()   
                 st.success("✅ Tüm hisselerin derin yapay zeka analizi başarıyla tamamlandı! Yukarıdaki sekmeleri açarak raporları okuyabilirsiniz.")
 
     elif secim == "İzleme Listesi":
