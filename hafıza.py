@@ -3,7 +3,6 @@ from datetime import datetime
 from pinecone import Pinecone, ServerlessSpec
 from sentence_transformers import SentenceTransformer
 import uuid
-import feedparser
 import streamlit as st
 import os
 from dotenv import load_dotenv
