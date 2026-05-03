@@ -252,10 +252,7 @@ with main_col:
                     with tab1:
                         st.markdown(analiz_sonucu)
                     with tab2:
-                        if "HATA" in agresif_yorum or "⚠️" in agresif_yorum:
-                            st.error(agresif_yorum)
-                        else:
-                            st.success(agresif_yorum)
+                        st.markdown(agresif_yorum)
                     with tab3:
                         st.dataframe(df.tail(10))
 
@@ -577,7 +574,7 @@ with main_col:
         
         gundem_sorgusu = st.text_input("Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):", value="Borsa İstanbul şirket gelişmeleri")
         
-        if st.sidebar.button("Haberleri Getir"):
+        if st.button("Haberleri Getir"):
             with st.spinner("Hafıza taranıyor..."):
                 
                 # Sadece RAG hafızasından haberleri çekip listeliyoruz
