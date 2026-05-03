@@ -15,3 +15,4 @@ pinecone
 sentence_transformers
 torchvision
 feedparser
+torch
