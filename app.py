@@ -198,7 +198,7 @@ with main_col:
                         df_kısa=df.tail(30)
                         temel = get_temel_hesapla(clean_symbol)
 
-                        analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa, ai_rapor, fib_200, son_sbs)
+                        analiz_sonucu=gemini_bot(clean_symbol, temel, df_kısa,haberler_listesi, ai_rapor, fib_200, son_sbs)
 
                         if ollama_api_key:
                             my_bar.progress(90, text="ollama analizi denetliyor...")
@@ -285,7 +285,7 @@ with main_col:
                 # İlerleme çubuğunu güncelle
                 progress_bar.progress((i + 1) / len(bist100_hisseler), text=f"({i+1}/{len(bist100_hisseler)}) {sembol} analiz ediliyor...")
                 
-                clean_symbol, df, info = get_stock_data(sembol)
+                clean_symbol, df, info = get_stock_data(sembol) 
                 
                 try:
                     # Teknik analiz verilerini hesapla
