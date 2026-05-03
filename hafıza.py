@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import requests
 import feedparser
 
-load_dotenv()
+load_dotenv("api_keys.env")
 
 # --- 1. AYARLAR VE BAŞLATMA ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
