@@ -1,12 +1,13 @@
 import pandas as pd
-from datetime import datetime
-from pinecone import Pinecone, ServerlessSpec
 import uuid
 import streamlit as st
 import os
-from dotenv import load_dotenv
 import requests
 import feedparser
+
+from dotenv import load_dotenv
+from datetime import datetime
+from pinecone import Pinecone, ServerlessSpec
 
 load_dotenv("api_keys.env")
 

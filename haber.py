@@ -1,6 +1,6 @@
+import ssl
 import feedparser
 from datetime import datetime
-import ssl
 
 # SSL sertifika hatalarını aşmak için
 if hasattr(ssl, '_create_unverified_context'):

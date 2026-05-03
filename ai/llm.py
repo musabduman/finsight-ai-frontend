@@ -1,8 +1,9 @@
-from google import genai
 import time
 import pandas as pd     
-from hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
+
+from google import genai
 from ollama import Client 
+from hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):

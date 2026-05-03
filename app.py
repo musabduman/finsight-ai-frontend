@@ -1,16 +1,16 @@
 import time
+import auth_ui
 import requests
 import pandas as pd
 import yfinance as yf
 import streamlit as st
 import matplotlib.pyplot as plt
-import auth_ui
 
-from hafıza import save_to_memory, get_memory_for_llm, anlik_hisse_haberi_cek
-from watchlist import watchlist_sayfasi
-from indicators.technical import teknik_analiz
 from ai.pythorc import deeplearning
 from ai.llm import Gemini, OllamaAgresif, OllamaChat
+from watchlist import watchlist_sayfasi
+from indicators.technical import teknik_analiz
+from hafıza import get_memory_for_llm, anlik_hisse_haberi_cek
 
 st.set_page_config(page_title="AI Borsa Asistanı", page_icon="📈", layout="wide")
 is_ready = auth_ui.login_sidebar()
