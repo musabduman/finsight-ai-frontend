@@ -51,7 +51,7 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@@st.cache_data(ttl=1800)
+@st.cache_data(ttl=1800)
 def get_price_data(symbol):
     df = yf.download(symbol, period="3y", progress=False)
 
@@ -570,29 +570,29 @@ with main_col:
                 st.success("✅ Tüm hisselerin derin yapay zeka analizi başarıyla tamamlandı! Yukarıdaki sekmeleri açarak raporları okuyabilirsiniz.")
 
     elif secim == "İzleme Listesi":
-            watchlist_sayfasi(get_stock_data, teknik_analiz)
-
-    elif secim == "İzleme Listesi":
         watchlist_sayfasi(get_stock_data, teknik_analiz)
 
     elif secim == "Haber Akışı":
-        st.title("📰 Piyasa Gündemi")
-        st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
+        # Tüm içeriği ana ekrandaki geniş kolona (main_col) yerleştiriyoruz
+        with main_col:
+            st.title("📰 Piyasa Gündemi")
+            st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
 
-        gundem_sorgusu = st.text_input(
-            "Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):",
-            value="Borsa İstanbul şirket gelişmeleri"
-        )
+            gundem_sorgusu = st.text_input(
+                "Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):",
+                value="Borsa İstanbul şirket gelişmeleri"
+            )
 
-        if st.button("Haberleri Getir", type="primary", use_container_width=True):
-            with st.spinner("Hafıza taranıyor..."):
-                hafiza_haberleri = get_memory_for_llm(query=gundem_sorgusu, limit=10)
+            # Buton artık sol menüde değil, ana ekranın akışında yer alacak
+            if st.button("Haberleri Getir", type="primary", use_container_width=True):
+                with st.spinner("Hafıza taranıyor..."):
+                    hafiza_haberleri = get_memory_for_llm(query=gundem_sorgusu, limit=10)
 
-                if "bulunamadı" in hafiza_haberleri.lower():
-                    st.warning("Hafızada bu konuyla ilgili güncel haber bulunamadı.")
-                else:
-                    st.success("Haberler başarıyla çekildi!")
-                    st.markdown(hafiza_haberleri)
+                    if "bulunamadı" in hafiza_haberleri.lower():
+                        st.warning("Hafızada bu konuyla ilgili güncel haber bulunamadı.")
+                    else:
+                        st.success("Haberler başarıyla çekildi!")
+                        st.markdown(hafiza_haberleri)
 
 @st.fragment
 def chat_bolumu():
