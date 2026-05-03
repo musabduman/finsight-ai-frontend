@@ -13,3 +13,4 @@ requests
 ollama
 pinecone-client
 sentence_transformers
+feadparser
