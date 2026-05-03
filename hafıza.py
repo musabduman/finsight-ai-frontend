@@ -1,129 +1,152 @@
 import pandas as pd
 from datetime import datetime
 from pinecone import Pinecone, ServerlessSpec
-from sentence_transformers import SentenceTransformer
 import uuid
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import requests
+import feedparser
 
 load_dotenv()
+
 # --- 1. AYARLAR VE BAŞLATMA ---
-# Ücretsiz bir Pinecone hesabı açıp API anahtarını buraya yazacaksın
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = "finsight-memory"
+EMBEDDING_MODEL = "multilingual-e5-large"  # Türkçe destekli, 1024 boyut
+EMBEDDING_DIM = 1024
 
-if not PINECONE_API_KEY:
-    print("⚠️ Pinecone API Anahtarı bulunamadı! Hafıza devre dışı.")
-    pc = None
-    index = None
-    model = None
-else:
-    # Anahtar varsa normal şekilde bağlan / Pinecone bağlantısı
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    # Index (Veritabanı Tablosu) yoksa bulutta oluştur
-    if INDEX_NAME not in pc.list_indexes().names():
-        print("Bulutta yeni bir vektör hafızası oluşturuluyor...")
-        pc.create_index(
-            name=INDEX_NAME,
-            dimension=384, # Seçtiğimiz embedding modelinin vektör boyutu
-            metric="cosine", # Anlamsal benzerlik ölçümü
-            spec=ServerlessSpec(cloud="aws", region="us-east-1")
-        )
+# Pinecone bağlantısı
+pc = Pinecone(api_key=PINECONE_API_KEY)
+
+# Index yoksa oluştur
+if INDEX_NAME not in pc.list_indexes().names():
+    print("Bulutta yeni bir vektör hafızası oluşturuluyor...")
+    pc.create_index(
+        name=INDEX_NAME,
+        dimension=EMBEDDING_DIM,
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")
+    )
 
 index = pc.Index(INDEX_NAME)
 
-# Metinleri vektöre çevirecek yerel model (PyTorch tabanlıdır, bilgisayarında çalışır)
-print("Embedding modeli yükleniyor...")
-model = SentenceTransformer('all-MiniLM-L6-v2') 
 
-# --- 2. FONKSİYONLAR ---
+# --- 2. EMBEDDING FONKSİYONU ---
+def embed(texts: list[str], input_type: str = "passage") -> list[list[float]]:
+    """Pinecone inference API ile metinleri vektöre çevirir. Torch gerekmez."""
+    result = pc.inference.embed(
+        model=EMBEDDING_MODEL,
+        inputs=texts,
+        parameters={"input_type": input_type, "truncate": "END"}
+    )
+    return [item["values"] for item in result]
+
+
+# --- 3. HAFIZAYA KAYDET ---
 def save_to_memory(new_data):
     try:
         if isinstance(new_data, dict):
             new_data = [new_data]
-            
-        vectors_to_upsert = []
-        
+
+        texts = []
         for item in new_data:
-            hisse = item.get('hisse', 'Bilinmiyor')
-            ozet = item.get('ozet', 'Bilinmiyor')
-            duygu = item.get('duygu', 'Bilinmiyor')
-            tarih = datetime.now().strftime("%Y-%m-%d %H:%M")
-            
-            # Yapay zekanın anlayacağı ana metni oluştur
-            text_to_embed = f"{hisse} hissesi hakkında gelişme: {ozet}"
-            
-            # Metni vektöre (sayısal dizilere) çevir
-            vector = model.encode(text_to_embed).tolist()
-            
-            # Her habere benzersiz bir ID ver
-            doc_id = str(uuid.uuid4())
-            
-            # Buluta gönderilecek format: (ID, Vektör, Metadata/Ek Bilgiler)
+            hisse = item.get("hisse", "Bilinmiyor")
+            ozet = item.get("ozet", "Bilinmiyor")
+            texts.append(f"{hisse} hissesi hakkında gelişme: {ozet}")
+
+        # Tek API çağrısında tüm metinleri vektöre çevir
+        vectors = embed(texts, input_type="passage")
+
+        vectors_to_upsert = []
+        for item, text, vector in zip(new_data, texts, vectors):
             vectors_to_upsert.append((
-                doc_id, 
-                vector, 
-                {"hisse": hisse, "ozet": ozet, "duygu": duygu, "tarih": tarih, "text": text_to_embed}
+                str(uuid.uuid4()),
+                vector,
+                {
+                    "hisse": item.get("hisse", "Bilinmiyor"),
+                    "ozet": item.get("ozet", "Bilinmiyor"),
+                    "duygu": item.get("duygu", "Bilinmiyor"),
+                    "tarih": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "text": text
+                }
             ))
-            
-        # Vektörleri Pinecone'a fırlat (Upsert işlemi)
+
         if vectors_to_upsert:
             index.upsert(vectors=vectors_to_upsert)
             print(f"{len(vectors_to_upsert)} adet yeni analiz bulut hafızasına eklendi.")
-            
-        return pd.DataFrame(new_data) # Akışı bozmamak için dataframe dönüyoruz
-        
+
+        return pd.DataFrame(new_data)
+
     except Exception as e:
         print(f"Bulut hafızaya kaydetme hatası: {e}")
         return None
 
-def get_memory_for_llm(query, limit=5,hisse_filtresi=None):
-    """LLM'e bağlam vermek için, sorulan soruyla EN ALAKALI geçmiş verileri getirir."""
-    try:
-        # 1. Önce kullanıcının veya LLM'in sorusunu vektöre çeviriyoruz
-        query_vector = model.encode(query).tolist()
-        
-        filter = None
-        if hisse_filtresi:
-            filter = {"hisse": {"$eq": hisse_filtresi}}
 
-        # 2. Pinecone'da bu vektöre en çok benzeyen haberleri arıyoruz (İşte RAG budur!)
+# --- 4. HAFIZADAN OKU ---
+def get_memory_for_llm(query: str, limit: int = 5, hisse_filtresi: str = None) -> str:
+    """Soruyla en alakalı geçmiş verileri getirir (RAG)."""
+    try:
+        # Soruyu vektöre çevir (query tipinde embed et)
+        query_vector = embed([query], input_type="query")[0]
+
+        filtre = None
+        if hisse_filtresi:
+            filtre = {"hisse": {"$eq": hisse_filtresi}}
+
         search_results = index.query(
             vector=query_vector,
             top_k=limit,
             include_metadata=True,
-            filter=filter
+            filter=filtre  # Türkçe değil, 'filter' olmalı
         )
-        
-        matches = search_results.get('matches', [])
-        
+
+        matches = search_results.get("matches", [])
+
         if not matches:
             return "İlgili geçmiş veri bulunamadı."
-            
+
         context_text = f"--- '{query}' İLE İLGİLİ GEÇMİŞ HAFIZA ---\n"
-        
         for match in matches:
-            meta = match['metadata']
-            skor = round(match['score'], 2)
-            kaynak = meta.get('kaynak', 'Bilinmeyen Kaynak')
-            link = meta.get('link', '#')
-            
-            # LLM'in okuyacağı format (Kaynak bilgisiyle birlikte)
-            context_text += f"Tarih: {meta['tarih']} | Hisse: {meta['hisse']} | Kaynak: {kaynak}\n"
+            meta = match["metadata"]
+            skor = round(match["score"], 2)
+            context_text += f"Tarih: {meta['tarih']} | Hisse: {meta['hisse']} | Duygu: {meta['duygu']}\n"
             context_text += f"Haber: {meta['ozet']}\n"
-            context_text += f"Orijinal Link: {link}\n"
             context_text += f"(Alaka Skoru: {skor})\n"
             context_text += "-" * 30 + "\n"
-            
+
         return context_text
-    
+
     except Exception as e:
         print(f"Hafıza okuma hatası: {e}")
         return "Hafızaya ulaşılamadı."
-    
-@st.cache_data(ttl=1800) 
-def anlik_hisse_haberi_cek(sembol):
-    print(f"🌐 Sadece {sembol} için güncel web taraması yapılıyor...") 
-    
-    arama_url = f"https://news.google.com/rss/search?q={sembol}+hisse+KAP+BİST&hl=tr&gl=TR&ceid=TR:tr"
+
+
+# --- 5. HABERLERİ ÇEK ---
+@st.cache_data(ttl=1800)
+def anlik_hisse_haberi_cek(sembol: str) -> list[dict]:
+    """Google News RSS'ten belirtilen hisse için güncel haberleri çeker."""
+    print(f"🌐 {sembol} için güncel web taraması yapılıyor...")
+
+    arama_url = (
+        f"https://news.google.com/rss/search"
+        f"?q={sembol}+hisse+KAP+BİST&hl=tr&gl=TR&ceid=TR:tr"
+    )
+
+    try:
+        feed = feedparser.parse(arama_url)
+        haberler = []
+
+        for entry in feed.entries[:10]:
+            haberler.append({
+                "baslik": entry.get("title", ""),
+                "link": entry.get("link", ""),
+                "tarih": entry.get("published", ""),
+                "ozet": entry.get("summary", entry.get("title", ""))
+            })
+
+        return haberler
+
+    except Exception as e:
+        print(f"Haber çekme hatası: {e}")
+        return []
