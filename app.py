@@ -568,15 +568,17 @@ with main_col:
     elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
-if secim == "Haber Akışı":
-    with main_col:  # ← tekrar açık main_col
+    elif secim == "İzleme Listesi":
+        watchlist_sayfasi(get_stock_data, teknik_analiz)
+
+    elif secim == "Haber Akışı":
         st.title("📰 Piyasa Gündemi")
         st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
 
         gundem_sorgusu = st.text_input(
-        "Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):",
-        value="Borsa İstanbul şirket gelişmeleri"
-    )
+            "Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):",
+            value="Borsa İstanbul şirket gelişmeleri"
+        )
 
         if st.button("Haberleri Getir", type="primary", use_container_width=True):
             with st.spinner("Hafıza taranıyor..."):
