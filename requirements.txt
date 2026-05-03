@@ -6,6 +6,7 @@ scikit-learn
 python-dotenv
 requests
 feedparser
+joblib
 
 # --- YAPAY ZEKA VE ARAYÜZ ---
 google-genai
@@ -17,3 +18,8 @@ ollama
 
 # --- VEKTÖR VE RAG ---
 pinecone==3.2.2
+
+# --- PYTORCH (CPU VERSİYONU) ---
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1
+torchvision==0.15.2
