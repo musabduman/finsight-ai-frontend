@@ -34,7 +34,7 @@ if "gemini_key" not in st.session_state or "g_key" not in st.session_state:
 
 
 st.sidebar.title("🤖 Kontrol Paneli")
-secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama","Hafıza"])
+secim = st.sidebar.radio("Mod Seçiniz", ["İzleme Listesi","Tek Hisse Analizi", "BIST30 Tarama", "Mega Tarama","Haber Akışı"])
 
 st.sidebar.info("""
 **Aktif Ajanlar:**
