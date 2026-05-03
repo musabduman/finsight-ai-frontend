@@ -35,7 +35,12 @@ index = pc.Index(INDEX_NAME)
 
 # Metinleri vektöre çevirecek yerel model (PyTorch tabanlıdır, bilgisayarında çalışır)
 print("Embedding modeli yükleniyor...")
-model = SentenceTransformer('all-MiniLM-L6-v2') 
+# Modeli sadece gerektiğinde RAM'e alacak akıllı fonksiyon
+@st.cache_resource
+def get_embedding_model():
+    from sentence_transformers import SentenceTransformer
+    print("Embedding modeli RAM'e yükleniyor...")
+    return SentenceTransformer('all-MiniLM-L6-v2')
 
 # --- 2. FONKSİYONLAR ---
 def save_to_memory(new_data):
@@ -55,7 +60,7 @@ def save_to_memory(new_data):
             text_to_embed = f"{hisse} hissesi hakkında gelişme: {ozet}"
             
             # Metni vektöre (sayısal dizilere) çevir
-            vector = model.encode(text_to_embed).tolist()
+            vector = get_embedding_model().encode(text_to_embed).tolist()
             
             # Her habere benzersiz bir ID ver
             doc_id = str(uuid.uuid4())
@@ -82,7 +87,7 @@ def get_memory_for_llm(query, limit=5,hisse_filtresi=None):
     """LLM'e bağlam vermek için, sorulan soruyla EN ALAKALI geçmiş verileri getirir."""
     try:
         # 1. Önce kullanıcının veya LLM'in sorusunu vektöre çeviriyoruz
-        query_vector = model.encode(query).tolist()
+        query_vector = get_embedding_model().encode(query)
         
         filtre = None
         if hisse_filtresi:
