@@ -539,7 +539,7 @@ with main_col:
                             """
 
                             analiz_sonucu = gemini_bot(clean_symbol, temel, df, haberler_listesi, ai_rapor, fib_200, son_sbs)
-                            agresif_yorum = ollama_bot(df,ai_rapor,fib_20, son_sbs)
+                            agresif_yorum = ollama_bot.generate(df,ai_rapor,fib_20, son_sbs)
                             
                             # Metrikleri Göster
                             c1, c2, c3, c4, c5 = st.columns(5)
