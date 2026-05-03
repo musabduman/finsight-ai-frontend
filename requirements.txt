@@ -17,10 +17,11 @@ ollama
 
 # --- VEKTÖR VE RAG ---
 pinecone
-sentence-transformers
+sentence-transformers==2.2.2
+transformers==4.30.0
 accelerate
 
 # --- PYTORCH (CPU VERSİYONU) ---
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
-torchvision
+torch==2.0.1
+torchvision==0.15.2
