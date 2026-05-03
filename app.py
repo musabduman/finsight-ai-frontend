@@ -573,8 +573,12 @@ with main_col:
         st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
         
         gundem_sorgusu = st.text_input("Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):", value="Borsa İstanbul şirket gelişmeleri")
-        
-        if st.button("Haberleri Getir", type="primary", use_container_width=True):
+
+        btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
+        with btn_col2:
+            haberleri_getir = st.button("Haberleri Getir", type="primary", use_container_width=True)
+
+        if haberleri_getir:
             with st.spinner("Hafıza taranıyor..."):
                 
                 # Sadece RAG hafızasından haberleri çekip listeliyoruz
