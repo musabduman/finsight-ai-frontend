@@ -1,7 +1,6 @@
 from google import genai
 import time
 import pandas as pd     
-import requests
 from hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
 from ollama import Client 
 
