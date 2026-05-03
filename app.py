@@ -41,7 +41,7 @@ st.sidebar.info("""
 * 🧠 Gemini 1.5 Flash (Analist)
 * 🛡️ Ollama (Agresif Analist)
 * 🧮 PyTorch (Kahin) 
-* 📚 Hafıza
+* 📚 Haberler (RAG Hafıza)
 """)
 
 def normalize_symbol(symbol: str):

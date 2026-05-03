@@ -11,3 +11,4 @@ pyarrow==14.0.2
 matplotlib
 requests
 ollama
+pinecone
