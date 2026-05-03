@@ -54,13 +54,11 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    try:
-        df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
-    except TypeError:
-        df = yf.download(symbol, period="3y", progress=False)
+    df = yf.download(symbol, period="3y", progress=False)
 
+    # Yeni yfinance MultiIndex kolonları düzleştir
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
+        df.columns = [col[0] for col in df.columns]
 
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
