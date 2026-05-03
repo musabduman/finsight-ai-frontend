@@ -53,7 +53,7 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    df=yf.download(symbol, period="3y", progress=False)
+    df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
     
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
@@ -590,7 +590,7 @@ with main_col:
                     st.success("Haberler başarıyla çekildi!")
                     st.markdown(hafiza_haberleri)
 
-# @st.fragment
+@st.fragment
 def chat_bolumu():
     st.markdown("### 💬 Asistan")
     
@@ -633,4 +633,3 @@ def chat_bolumu():
 with chat_col:
     chat_bolumu()
 
-st.markdown("")
