@@ -574,7 +574,7 @@ with main_col:
         
         gundem_sorgusu = st.text_input("Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):", value="Borsa İstanbul şirket gelişmeleri")
         
-        if st.button("Haberleri Getir"):
+        if st.button("Haberleri Getir", type="primary", use_container_width=True):
             with st.spinner("Hafıza taranıyor..."):
                 
                 # Sadece RAG hafızasından haberleri çekip listeliyoruz
