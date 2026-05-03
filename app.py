@@ -53,7 +53,7 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    df=yf.download(symbol, period="3y", progress=False, multi_level_index=False)
+    df=yf.download(symbol, period="3y", progress=False)
     
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
