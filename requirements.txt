@@ -16,3 +16,4 @@ sentence_transformers
 torchvision
 feedparser
 torch
+accelerate
