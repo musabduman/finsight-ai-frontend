@@ -13,4 +13,5 @@ requests
 ollama
 pinecone
 sentence_transformers
+torchvision
 feedparser
