@@ -16,9 +16,9 @@ matplotlib
 ollama
 
 # --- VEKTÖR VE RAG ---
-pinecone
+pinecone==3.2.2
 sentence-transformers>=2.3.0
-transformers==4.30.0
+transformers>=4.36.0        # 4.30.0'ı bırak, pinecone ile çakışıyor
 accelerate
 
 # --- PYTORCH (CPU VERSİYONU) ---

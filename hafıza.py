@@ -79,16 +79,16 @@ def get_memory_for_llm(query, limit=5,hisse_filtresi=None):
         # 1. Önce kullanıcının veya LLM'in sorusunu vektöre çeviriyoruz
         query_vector = model.encode(query).tolist()
         
-        filtre = None
+        filter = None
         if hisse_filtresi:
-            filtre = {"hisse": {"$eq": hisse_filtresi}}
+            filter = {"hisse": {"$eq": hisse_filtresi}}
 
         # 2. Pinecone'da bu vektöre en çok benzeyen haberleri arıyoruz (İşte RAG budur!)
         search_results = index.query(
             vector=query_vector,
             top_k=limit,
             include_metadata=True,
-            filtre=filtre
+            filter=filter
         )
         
         matches = search_results.get('matches', [])
