@@ -51,9 +51,13 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@st.cache_data(ttl=1800)
+@@st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
+    df = yf.download(symbol, period="3y", progress=False)
+
+    # Multi-level index varsa düzleştir
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
     
     if df.empty:
         raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
