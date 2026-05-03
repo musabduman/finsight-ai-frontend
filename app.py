@@ -568,27 +568,24 @@ with main_col:
     elif secim == "İzleme Listesi":
             watchlist_sayfasi(get_stock_data, teknik_analiz)
 
-    elif secim == "Haber Akışı":
+if secim == "Haber Akışı":
+    with main_col:  # ← tekrar açık main_col
         st.title("📰 Piyasa Gündemi")
         st.write("Pinecone RAG hafızasındaki en güncel piyasa ve şirket haberleri.")
-        
-        gundem_sorgusu = st.text_input("Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):", value="Borsa İstanbul şirket gelişmeleri")
 
-        btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
-        with btn_col2:
-            haberleri_getir = st.button("Haberleri Getir", type="primary", use_container_width=True)
+        gundem_sorgusu = st.text_input(
+        "Gündem Sorgusu (Örn: Borsa İstanbul, Enerji sektörü, THYAO):",
+        value="Borsa İstanbul şirket gelişmeleri"
+    )
 
-        if haberleri_getir:
+        if st.button("Haberleri Getir", type="primary", use_container_width=True):
             with st.spinner("Hafıza taranıyor..."):
-                
-                # Sadece RAG hafızasından haberleri çekip listeliyoruz
                 hafiza_haberleri = get_memory_for_llm(query=gundem_sorgusu, limit=10)
-                
+
                 if "bulunamadı" in hafiza_haberleri.lower():
                     st.warning("Hafızada bu konuyla ilgili güncel haber bulunamadı.")
                 else:
                     st.success("Haberler başarıyla çekildi!")
-                    # Markdown formatında şıkça ekrana bas
                     st.markdown(hafiza_haberleri)
 
 # @st.fragment
