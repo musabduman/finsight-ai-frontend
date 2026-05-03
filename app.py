@@ -591,7 +591,7 @@ with main_col:
                     # Markdown formatında şıkça ekrana bas
                     st.markdown(hafiza_haberleri)
 
-@st.fragment
+# @st.fragment
 def chat_bolumu():
     st.markdown("### 💬 Asistan")
     
@@ -633,3 +633,5 @@ def chat_bolumu():
 
 with chat_col:
     chat_bolumu()
+
+st.markdown("")
