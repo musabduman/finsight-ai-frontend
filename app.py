@@ -53,22 +53,18 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    from curl_cffi import requests as curl_requests
+    # Sıradan bir tarayıcı gibi görünmek için User-Agent ekliyoruz
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    })
     
-    # Chrome 110 kimliğine bürünerek engellemeleri aşıyoruz
-    session = curl_requests.Session(impersonate="chrome110")
-    
-    # yf.download YERİNE Ticker objesini session ile birlikte oluşturuyoruz
     ticker = yf.Ticker(symbol, session=session)
-    
-    # history() metodu tekil hisseler için çok daha temiz ve sorunsuz bir DataFrame döner
     df = ticker.history(period="3y")
 
     if df.empty:
         raise ValueError(f"{symbol} için boş veri döndü")
 
-    # Yeni sürümlerde history() genelde temiz döner ama her ihtimale karşı 
-    # MultiIndex (çoklu sütun) kontrolünü bir güvenlik önlemi olarak tutabiliriz:
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = [col[0] for col in df.columns]
 
@@ -370,7 +366,7 @@ with main_col:
                 # Kullanıcılar sütun başlıklarına tıklayarak RSI, Güven Skoru vb. filtrelemeler yapabilir
                 st.dataframe(
                     sonuc_df.style.apply(lambda x: ['background: #1e3d2f' if v == 'Al' else 'background: #3d1e1e' if v == 'Sat' else '' for v in x], subset=['PyTorch Yön']),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True
                 )
                 
