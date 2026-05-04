@@ -7,6 +7,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 from ai.pythorc import deeplearning
+from curl_cffi import requests as curl_requests
 from ai.llm import Gemini, OllamaAgresif, OllamaChat
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
@@ -51,17 +52,14 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=1800)  
 def get_price_data(symbol):
-    df = yf.download(symbol, period="3y", progress=False)
-
-    # Yeni yfinance MultiIndex kolonları düzleştir
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0] for col in df.columns]
-
+    session = curl_requests.Session(impersonate="chrome")
+    ticker = yf.Ticker(symbol, session=session)
+    df = ticker.history(period="3y")
+    
     if df.empty:
-        raise ValueError("Boş veri döndü (muhtemelen Yahoo limiti veya sembol hatası)")
-
+        raise ValueError("Boş veri döndü")
     return df
 
 @st.cache_data(ttl=1800)
