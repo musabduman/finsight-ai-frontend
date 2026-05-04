@@ -1,13 +1,12 @@
 # --- TEMEL KÜTÜPHANELER ---
 numpy==1.26.4
 pandas==2.0.3
-yfinance==0.2.40
+yfinance
 scikit-learn
 python-dotenv
 requests
 feedparser
 joblib
-curl_cffi
 
 # --- YAPAY ZEKA VE ARAYÜZ ---
 google-genai

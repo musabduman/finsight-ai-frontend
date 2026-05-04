@@ -7,7 +7,6 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 from ai.pythorc import deeplearning
-from curl_cffi import requests as curl_requests
 from ai.llm import Gemini, OllamaAgresif, OllamaChat
 from watchlist import watchlist_sayfasi
 from indicators.technical import teknik_analiz
@@ -56,20 +55,22 @@ def normalize_symbol(symbol: str):
 def get_price_data(symbol):
     from curl_cffi import requests as curl_requests
     
+    # Chrome 110 kimliğine bürünerek engellemeleri aşıyoruz
     session = curl_requests.Session(impersonate="chrome110")
     
-    df = yf.download(
-        symbol,
-        period="3y",
-        progress=False,
-        session=session
-    )
-
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0] for col in df.columns]
+    # yf.download YERİNE Ticker objesini session ile birlikte oluşturuyoruz
+    ticker = yf.Ticker(symbol, session=session)
+    
+    # history() metodu tekil hisseler için çok daha temiz ve sorunsuz bir DataFrame döner
+    df = ticker.history(period="3y")
 
     if df.empty:
-        raise ValueError("Boş veri döndü")
+        raise ValueError(f"{symbol} için boş veri döndü")
+
+    # Yeni sürümlerde history() genelde temiz döner ama her ihtimale karşı 
+    # MultiIndex (çoklu sütun) kontrolünü bir güvenlik önlemi olarak tutabiliriz:
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [col[0] for col in df.columns]
 
     return df
 
