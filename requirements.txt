@@ -7,6 +7,7 @@ python-dotenv
 requests
 feedparser
 joblib
+curl_cffi
 
 # --- YAPAY ZEKA VE ARAYÜZ ---
 google-genai
