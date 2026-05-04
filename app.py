@@ -52,14 +52,25 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@st.cache_data(ttl=1800)  
+@st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    session = curl_requests.Session(impersonate="chrome")
-    ticker = yf.Ticker(symbol, session=session)
-    df = ticker.history(period="3y")
+    from curl_cffi import requests as curl_requests
     
+    session = curl_requests.Session(impersonate="chrome110")
+    
+    df = yf.download(
+        symbol,
+        period="3y",
+        progress=False,
+        session=session
+    )
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [col[0] for col in df.columns]
+
     if df.empty:
         raise ValueError("Boş veri döndü")
+
     return df
 
 @st.cache_data(ttl=1800)
