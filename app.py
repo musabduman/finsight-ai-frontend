@@ -1,13 +1,16 @@
 import streamlit as st
 
 from main import tek_hisse_run
+from indicators.technical import teknik_analiz
 from ai.llm import Gemini, OllamaAgresif, OllamaChat
 from ai.pythorc import deeplearning
 from modules.watchlist import watchlist_sayfasi
 from modules.mega_tarama import mega_tarama
 from modules.bist30_tarama import bist30_tarama
 from modules.haber_akisi import haber_akisi
-from services.veri import get_stock_data
+from services.veri import get_stock_data, get_temel_hesapla
+from services.hafıza import get_memory_for_llm
+from services.haber import anlik_hisse_haberi_cek
 from services.config import get_api_keys
     
 keys = get_api_keys()
@@ -67,14 +70,25 @@ elif secim == "Mega Tarama":
 
 # --- BIST30 ---
 elif secim == "BIST30 Tarama":
-    bist30_tarama()
+    bist30_tarama(
+        get_stock_data=get_stock_data,
+        teknik_analiz=teknik_analiz,
+        dl_bot=dl_bot,
+        Gemini=Gemini,
+        OllamaAgresif=OllamaAgresif,
+        get_temel_hesapla=get_temel_hesapla,
+        anlik_hisse_haberi_cek=anlik_hisse_haberi_cek,
+        get_memory_for_llm=get_memory_for_llm,
+        gemini_api=kullanici_api_key,
+        ollama_api=ollama_api_key,
+    )
 
 # --- HABER ---
 elif secim == "Haber Akışı":
     haber_akisi()
 
 elif secim == "Watchlist":
-    watchlist_sayfasi()
+    watchlist_sayfasi(get_stock_data=get_stock_data, teknik_analiz=teknik_analiz)
 
 @st.fragment
 def chat_bolumu():

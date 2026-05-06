@@ -3,7 +3,7 @@ import pandas as pd
 
 from google import genai
 from ollama import Client 
-from services.hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
+from services.hafıza import get_memory_for_llm
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -287,13 +287,10 @@ class OllamaAgresif(BaseLLM):
         return gemini_prompt
     
     def generate(self, df, ai_rapor, fib_20, sbs):
-        system_prompt, user_prompt = self.build_prompt(
-            df, ai_rapor, fib_20, sbs
-        )
+        prompt = self.build_prompt(df, ai_rapor, fib_20, sbs)
         
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": prompt}
         ]
         
         try:

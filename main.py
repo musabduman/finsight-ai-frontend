@@ -1,12 +1,12 @@
 # main.py
-
 from indicators.technical import teknik_analiz
-from services.veri import get_stock_data, get_temel_hesapla
-from services.hafıza import get_memory_for_llm, anlik_hisse_haberi_cek
+from services.veri import get_stock, get_temel_hesapla
+from services.hafıza import get_memory_for_llm
+from services.haber import anlik_hisse_haberi_cek
 
 
 def tek_hisse_run(sembol, dl_bot, gemini_bot, ollama_bot):
-    clean_symbol, df, info = get_stock_data(sembol)
+    clean_symbol, df, info = get_stock(sembol)
 
     if df is None or df.empty:
         return {"error": "Veri alınamadı"}

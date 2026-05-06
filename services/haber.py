@@ -45,3 +45,20 @@ class StockNewsFetcher:
                 print(f"{kaynak_adi} haber çekme hatası: {e}")
 
         return haberler
+
+
+def anlik_hisse_haberi_cek(sembol: str, limit: int = 5) -> str:
+    """Belirli bir hisse için anlık haber çeker, metin olarak döner."""
+    fetcher = StockNewsFetcher()
+    haberler = fetcher.get_news(limit_per_source=limit)
+
+    temiz = sembol.replace(".IS", "").upper()
+    ilgili = [h for h in haberler if temiz in h.get("ozet", "").upper()]
+    kaynak = ilgili if ilgili else haberler[:limit]
+
+    if not kaynak:
+        return "Haber bulunamadı."
+
+    return "\n".join(
+        f"[{h.get('tarih','')}] {h.get('ozet','')}" for h in kaynak
+    )
