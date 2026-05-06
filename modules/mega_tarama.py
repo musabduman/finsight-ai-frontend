@@ -2,7 +2,7 @@ import time
 import pandas as pd
 import streamlit as st
 
-from veri import get_bulk_stocks, normalize_symbol
+from services.veri import get_bulk_stocks, normalize_symbol
 from indicators.technical import teknik_analiz
 
 
