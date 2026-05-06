@@ -3,7 +3,7 @@ import pandas as pd
 
 from google import genai
 from ollama import Client 
-from hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
+from services.hafıza import anlik_hisse_haberi_cek, get_memory_for_llm
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -317,45 +317,54 @@ class OllamaChat(BaseLLM):
     def __init__(self, api_key, model="gpt-oss:120b-cloud"):
         self.model = model
         self.api_key = api_key
-        # ollama kütüphanesi için Client objesini oluşturuyoruz
+
         self.client = Client(
             host="https://ollama.com",
-            headers={'Authorization': f'Bearer {self.api_key}'}
+            headers={"Authorization": f"Bearer {self.api_key}"}
         )
-        self.haber_hafizasi = get_memory_for_llm("BIST haberleri listesi",limit=5)
-    
+
     def build_prompt(self, mesaj_gecmisi, aktif_baglam=""):
-        system_content = f"""Sen BİST odaklı yardımcı bir yapay zeka borsa asistanısın.
-        Görevlerin:
-        1. Borsa ve finans terimleriyle ilgili soruları net ve anlaşılır cevapla. Kısa cevaplar ver.
-        2. Kesinlikle yatırım tavsiyesi verme.
-        3. Ekrandaki analizle ilgili sorularda aşağıdaki bağlamı kullan.
-        4. Elindeki bist 100 haberleri şu şekilde {self.haber_hafizasi}
-        5. Konuşma dilin günlük, samimi bir "bro" tarzında olmalı. Resmiyetten uzak dur.
         
-        Ekranda Açık Olan Analiz Bağlamı:
-        {aktif_baglam if aktif_baglam else 'Henüz analiz başlatılmamış.'}
-        """
+        # 🔥 HER MESAJDA YENİ HABER ÇEK (dinamik)
+        dinamik_haber = get_memory_for_llm(
+            query="BIST son haberler finans piyasa",
+            limit=7
+        )
+
+        system_content = f"""
+Sen profesyonel bir BIST piyasa asistanısın.
+
+📌 Kurallar:
+- Yatırım tavsiyesi VERME
+- Net ve kısa konuş
+- Gereksiz uzun açıklama yapma
+- “bro” tarzı hafif samimi dil kullan
+
+📊 CANLI HABERLER:
+{dinamik_haber}
+
+📊 AKTİF ANALİZ:
+{aktif_baglam if aktif_baglam else "yok"}
+"""
+
         messages = [{"role": "system", "content": system_content}]
         messages.extend(mesaj_gecmisi)
-        return messages 
-    
+        return messages
+
     def generate(self, mesaj_gecmisi, aktif_baglam=""):
         messages = self.build_prompt(mesaj_gecmisi, aktif_baglam)
-            
+
         try:
-             # ollama Client üzerinden istek atıyoruz
             response = self.client.chat(
                 model=self.model,
                 messages=messages,
                 options={
-                    "temperature": 0.6,
-                    "num_predict": 512
-                },
-                tools=[anlik_hisse_haberi_cek,get_memory_for_llm]
+                    "temperature": 0.5,
+                    "num_predict": 400
+                }
             )
-            
-            return response['message']['content'].strip()
+
+            return response["message"]["content"].strip()
 
         except Exception as e:
-            return f"⚠️ Chat Bağlantı Hatası: {e}"
+            return f"⚠️ Chat error: {e}"

@@ -1,5 +1,5 @@
-from haber import StockNewsFetcher 
-from hafıza import save_to_memory 
+from services.haber import StockNewsFetcher 
+from services.hafıza import save_to_memory 
 
 def main():
     print("GitHub Actions: Haber çekme işlemi başlatılıyor...")
