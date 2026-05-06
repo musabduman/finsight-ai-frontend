@@ -82,7 +82,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
                 except:
                     pass
             st.success("Başlangıç paketi başarıyla yüklendi! Sayfa yenileniyor...")
-            time.sleep(1)
+            time.sleep(2)
             st.rerun()
         return
 

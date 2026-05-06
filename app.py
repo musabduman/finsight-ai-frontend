@@ -51,7 +51,7 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=86400)
 def get_price_data(symbol):
     df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
 
@@ -60,7 +60,7 @@ def get_price_data(symbol):
 
     return df   
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=86400)
 def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
     return dict(ticker)
@@ -217,7 +217,7 @@ with main_col:
                         analiz_sonucu=""
 
                     my_bar.progress(100, text="Yorum Tamamlandı!")
-                    time.sleep(0.5)
+                    time.sleep(1)
                     my_bar.empty()
 
                     # --- GRAFİK KISMI ---
@@ -257,75 +257,82 @@ with main_col:
                         st.dataframe(df.tail(10))
 
     elif secim == "Mega Tarama":
+    # ... hisse listesi ...
         st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
         st.markdown("Bu modül, BIST100 hisselerinin teknik göstergelerini ve PyTorch tahminlerini hesaplayarak fırsatları listeler.")
 
-        # Güncel BIST100 Hisseleri (Gerektiğinde güncelleyebilirsiniz)
         bist100_hisseler = [
             "AEFES.IS", "AGHOL.IS", "AKBNK.IS", "AKCNS.IS", "AKSA.IS", "AKSEN.IS", "ALARK.IS", "ALBRK.IS", "ALGYO.IS", "ALKIM.IS",
-                "ARCLK.IS", "ASELS.IS", "ASTOR.IS", "BERA.IS", "BIMAS.IS", "BRSAN.IS", "BRYAT.IS", "BUCIM.IS", "CANTE.IS", "CCOLA.IS",
-                "CEMTS.IS", "CIMSA.IS", "DOAS.IS", "DOHOL.IS", "ECILC.IS", "EGEEN.IS", "EKGYO.IS", "ENJSA.IS", "ENKAI.IS", "EREGL.IS",
-                "EUREN.IS", "FROTO.IS", "GARAN.IS", "GENIL.IS", "GESAN.IS", "GLYHO.IS", "GUBRF.IS", "HALKB.IS", "HEKTS.IS", "IPEKE.IS",
-                "ISCTR.IS", "ISDMR.IS", "ISGYO.IS", "ISMEN.IS", "IZMDC.IS", "KARSN.IS", "KCAER.IS", "KCHOL.IS", "KONTR.IS", "KORDS.IS",
-                "KRDMD.IS", "MGROS.IS", "ODAS.IS", "OTKAR.IS", "OYAKC.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS",
-                "SASA.IS", "SISE.IS", "SKBNK.IS", "SMRTG.IS", "SNGYO.IS", "SOKM.IS", "TAVHL.IS", "TCELL.IS", "THYAO.IS", "TKFEN.IS",
-                "TOASO.IS", "TSKB.IS", "TTKOM.IS", "TTRAK.IS", "TUKAS.IS", "TUPRS.IS", "ULKER.IS", "VAKBN.IS", "VESBE.IS", "VESTL.IS",
-                "YKBNK.IS", "YYLGD.IS", "ZOREN.IS"
+            "ARCLK.IS", "ASELS.IS", "ASTOR.IS", "BERA.IS", "BIMAS.IS", "BRSAN.IS", "BRYAT.IS", "BUCIM.IS", "CANTE.IS", "CCOLA.IS",
+            "CEMTS.IS", "CIMSA.IS", "DOAS.IS", "DOHOL.IS", "ECILC.IS", "EGEEN.IS", "EKGYO.IS", "ENJSA.IS", "ENKAI.IS", "EREGL.IS",
+            "EUREN.IS", "FROTO.IS", "GARAN.IS", "GENIL.IS", "GESAN.IS", "GLYHO.IS", "GUBRF.IS", "HALKB.IS", "HEKTS.IS", "IPEKE.IS",
+            "ISCTR.IS", "ISDMR.IS", "ISGYO.IS", "ISMEN.IS", "IZMDC.IS", "KARSN.IS", "KCAER.IS", "KCHOL.IS", "KONTR.IS", "KORDS.IS",
+            "KRDMD.IS", "MGROS.IS", "ODAS.IS", "OTKAR.IS", "OYAKC.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS",
+            "SASA.IS", "SISE.IS", "SKBNK.IS", "SMRTG.IS", "SNGYO.IS", "SOKM.IS", "TAVHL.IS", "TCELL.IS", "THYAO.IS", "TKFEN.IS",
+            "TOASO.IS", "TSKB.IS", "TTKOM.IS", "TTRAK.IS", "TUKAS.IS", "TUPRS.IS", "ULKER.IS", "VAKBN.IS", "VESBE.IS", "VESTL.IS",
+            "YKBNK.IS", "YYLGD.IS", "ZOREN.IS"
         ]
 
-        if st.button("Mega Taramayı Başlat", type="primary"):
-            progress_bar = st.progress(0, text="BIST100 hisseleri taranıyor, lütfen bekleyin...")
-            tarama_sonuclari = [] 
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Mega Taramayı Başlat", type="primary"):
+                if "mega_tarama_sonuc" not in st.session_state:
+                    progress_bar = st.progress(0, text="BIST100 hisseleri taranıyor, lütfen bekleyin...")
+                    tarama_sonuclari = []
 
-            for i, sembol in enumerate(bist100_hisseler):
-                # İlerleme çubuğunu güncelle
-                progress_bar.progress((i + 1) / len(bist100_hisseler), text=f"({i+1}/{len(bist100_hisseler)}) {sembol} analiz ediliyor...")
-                
-                clean_symbol, df, info = get_stock_data(sembol) 
-                
-                try:
-                    # Teknik analiz verilerini hesapla
-                    df, fib_20, fib_200 = teknik_analiz(df)
-                    son_sbs = df['SBS'].iloc[-1]
-                    df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
-                    
-                    # PyTorch (Kahin) Tahmini
-                    try:
-                        sonuc_dl = dl_bot.analiz_et(df_muhasebeci)
-                        yon = sonuc_dl.get('yön', 'Nötr')
-                        hedef = sonuc_dl.get('tahmin', 0.0)
-                        guven = sonuc_dl.get('güven', 0.0)
-                    except Exception:
-                        yon, hedef, guven = "Hata", 0.0, 0.0
-                    
-                    # Son verileri çek
-                    son_fiyat = df['Close'].iloc[-1]
-                    rsi = df['RSI'].iloc[-1] if 'RSI' in df.columns else 0
-                    macd = df['MACD'].iloc[-1] if 'MACD' in df.columns else 0
-                    
-                    
-                    # Tablo için sözlüğe ekle
-                    tarama_sonuclari.append({
-                        "Hisse": clean_symbol.replace(".IS", ""),
-                        "Son Fiyat (₺)": round(son_fiyat, 2),
-                        "PyTorch Yön": yon,
-                        "Hedef Fiyat (₺)": round(hedef, 2),
-                        "Güven Skor (%)": round(guven, 2),
-                        "RSI": round(rsi, 2),
-                        "MACD": round(macd, 2)
-                    })
-                except Exception as e:
-                    st.error(f"Bir hata ile karşılaşıldı {e}")        
-                # Yahoo Finance ban yememek için ufak bir bekleme süresi
-                time.sleep(0.5) 
-                    
-            progress_bar.empty()
-            
+                    for i, sembol in enumerate(bist100_hisseler):
+                        progress_bar.progress((i + 1) / len(bist100_hisseler), text=f"({i+1}/{len(bist100_hisseler)}) {sembol} analiz ediliyor...")
+
+                        clean_symbol, df, info = get_stock_data(sembol)
+
+                        try:
+                            df, fib_20, fib_200 = teknik_analiz(df)
+                            son_sbs = df['SBS'].iloc[-1]
+                            df_muhasebeci = df[['Open','High','Low','Close','Volume']].dropna()
+
+                            try:
+                                sonuc_dl = dl_bot.analiz_et(df_muhasebeci)
+                                yon = sonuc_dl.get('yön', 'Nötr')
+                                hedef = sonuc_dl.get('tahmin', 0.0)
+                                guven = sonuc_dl.get('güven', 0.0)
+                            except Exception:
+                                yon, hedef, guven = "Hata", 0.0, 0.0
+
+                            son_fiyat = df['Close'].iloc[-1]
+                            rsi = df['RSI'].iloc[-1] if 'RSI' in df.columns else 0
+                            macd = df['MACD'].iloc[-1] if 'MACD' in df.columns else 0
+
+                            tarama_sonuclari.append({
+                                "Hisse": clean_symbol.replace(".IS", ""),
+                                "Son Fiyat (₺)": round(son_fiyat, 2),
+                                "PyTorch Yön": yon,
+                                "Hedef Fiyat (₺)": round(hedef, 2),
+                                "Güven Skor (%)": round(guven, 2),
+                                "RSI": round(rsi, 2),
+                                "MACD": round(macd, 2)
+                            })
+                        except Exception as e:
+                            st.error(f"Bir hata ile karşılaşıldı: {e}")
+
+                        time.sleep(1.0)
+
+                    progress_bar.empty()
+                    st.session_state.mega_tarama_sonuc = tarama_sonuclari  # KAYDET
+
+        with col2:
+            if "mega_tarama_sonuc" in st.session_state:
+                if st.button("🗑️ Taramayı Sıfırla"):
+                    del st.session_state.mega_tarama_sonuc
+                    st.rerun()
+
+        # TABLO — her zaman session_state'ten göster
+        if "mega_tarama_sonuc" in st.session_state:
+            tarama_sonuclari = st.session_state.mega_tarama_sonuc
+
             if tarama_sonuclari:
-                st.success("Tarama başarıyla tamamlandı!")
-                
-                # Verileri Pandas DataFrame'e çevir ve Streamlit'te göster
+                st.success(f"✅ Tarama tamamlandı — {len(tarama_sonuclari)} hisse analiz edildi.")
                 sonuc_df = pd.DataFrame(tarama_sonuclari).round(2)
+
                 def yon_ikonu_ekle(yon):
                     yon_str = str(yon).upper()
                     if "YÜKSELİŞ" in yon_str or "AL" in yon_str:
@@ -335,7 +342,6 @@ with main_col:
                     else:
                         return f"🟡 ➖ {yon}"
 
-                # 3. Güven Skoruna emoji ekleme fonksiyonu
                 def guven_ikonu_ekle(skor):
                     try:
                         skor_val = float(skor)
@@ -348,20 +354,15 @@ with main_col:
                     except:
                         return skor
 
-                # 4. Fonksiyonları DataFrame'e uygula
                 sonuc_df['PyTorch Yön'] = sonuc_df['PyTorch Yön'].apply(yon_ikonu_ekle)
                 sonuc_df['Güven Skor (%)'] = sonuc_df['Güven Skor (%)'].apply(guven_ikonu_ekle)
-                
-                # Tabloyu Streamlit'in interaktif dataframe bileşeni ile gösteriyoruz
-                # Kullanıcılar sütun başlıklarına tıklayarak RSI, Güven Skoru vb. filtrelemeler yapabilir
+
                 st.dataframe(
                     sonuc_df.style.apply(lambda x: ['background: #1e3d2f' if v == 'Al' else 'background: #3d1e1e' if v == 'Sat' else '' for v in x], subset=['PyTorch Yön']),
                     width="stretch",
                     hide_index=True
                 )
-                
-                st.info("💡 **İpucu:** Detaylı Gemini ve ollama raporu almak istediğiniz hisseyi soldaki 'Tek Hisse Analizi' menüsünden aratabilirsiniz.")
-
+                st.info("💡 **İpucu:** Detaylı analiz için soldaki 'Tek Hisse Analizi' menüsünü kullanın.")
     elif secim == "BIST30 Tarama":
 
         st.subheader("🎯 BIST30 Sinyal Avcısı")
@@ -487,7 +488,7 @@ with main_col:
                 except Exception as e:
                     st.error(f"Hata! {e}")
                     
-                time.sleep(0.1) # Yahoo Finance ban koruması
+                time.sleep(0.8) # Yahoo Finance ban koruması
                 
             progress_bar.empty()
             
