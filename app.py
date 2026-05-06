@@ -53,15 +53,13 @@ def normalize_symbol(symbol: str):
 
 @st.cache_data(ttl=1800)
 def get_price_data(symbol):
-    df = yf.download(symbol, period="3y", progress=False)
-
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0] for col in df.columns]
+    df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
 
     if df.empty:
         raise ValueError("Boş veri döndü")
 
-    return df
+    return df   
+
 @st.cache_data(ttl=1800)
 def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
