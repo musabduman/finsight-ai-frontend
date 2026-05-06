@@ -1,7 +1,6 @@
 import streamlit as st
 
 from main import tek_hisse_run
-from indicators.technical import teknik_analiz
 from ai.llm import Gemini, OllamaAgresif, OllamaChat
 from ai.pythorc import deeplearning
 from modules.watchlist import watchlist_sayfasi
@@ -12,17 +11,30 @@ from services.veri import get_stock_data, get_temel_hesapla
 from services.hafıza import get_memory_for_llm
 from services.haber import anlik_hisse_haberi_cek
 from services.config import get_api_keys
-    
+from indicators.technical import teknik_analiz
+from auth_ui import login_sidebar
+
+st.set_page_config(page_title="AI Borsa", layout="wide")
+
+# --- GİRİŞ KONTROLÜ ---
+giris_yapildi = login_sidebar()
+
+if not giris_yapildi:
+    st.info("Devam etmek için lütfen giriş yapın.")
+    st.stop()
+
+# --- BURADAN SONRASI SADECE GİRİŞ YAPILMIŞSA ÇALIŞIR ---
 keys = get_api_keys()
 
 kullanici_api_key = keys["gemini"]
 ollama_api_key = keys["ollama"]
 
-st.set_page_config(page_title="AI Borsa", layout="wide")
+if not kullanici_api_key:
+    st.warning("⚠️ Gemini API key eksik. Lütfen hesabınıza kayıtlı bir API key ekleyin.")
+    st.stop()
 
-# --- BOTLAR ---
+# --- BOTLAR (login sonrası, key varsa init edilir) ---
 dl_bot = deeplearning()
-
 gemini_bot = Gemini(api_key=kullanici_api_key)
 ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
 
@@ -37,7 +49,7 @@ bist100_hisseler = [
 
 secim = st.sidebar.radio(
     "Mod",
-    ["Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı"]
+    ["Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı", "Watchlist"]
 )
 
 # --- TEK HİSSE ---

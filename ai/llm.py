@@ -4,6 +4,7 @@ import pandas as pd
 from google import genai
 from ollama import Client 
 from services.hafıza import get_memory_for_llm
+from services.haber import anlik_hisse_haberi_cek
 
 class BaseLLM:
     def build_prompt(self,*args,**kwargs):
@@ -17,9 +18,10 @@ class BaseLLM:
 
 class Gemini(BaseLLM):
     def __init__(self,api_key,model="models/gemini-flash-latest"):
+        if not api_key:
+            raise ValueError("Gemini API key boş.")
         self.client=genai.Client(api_key=api_key)
         self.model=model
-        self.haber_hafizasi = get_memory_for_llm("BIST Hisse haberleri",limit=5)
 
         self.akademik_referans = """
         REFERANS ÇALIŞMA: BİST 100 Endeksinin Spektral Analiz Yöntemiyle İncelenmesi (Bekçioğlu vd., 2018).
@@ -84,7 +86,7 @@ class Gemini(BaseLLM):
         (bu rapor tamamen sayısal verilerle hesaplanmıştır bunU AYNEN YAZDIR ve yorumunda kullan!)
         
         5. EN SON BEŞ BİST HABERLERİ:
-        {self.haber_hafizasi}
+        {get_memory_for_llm("BIST Hisse haberleri", limit=5)}
         (Bu haberleri pozitif negatif olarak değerlendir ve eğer bu haberler arasında istenilen hisse hakkında bir haber varsa yorumunda kullan.)
         
         6. MATEMATİKSEL HESAPLAR:    
@@ -176,12 +178,10 @@ class OllamaAgresif(BaseLLM):
     def __init__(self, api_key, model="gpt-oss:120b-cloud"):
         self.model = model
         self.api_key = api_key
-        # ollama kütüphanesi için Client objesini oluşturuyoruz
         self.client = Client(
             host="https://ollama.com",
             headers={'Authorization': f'Bearer {self.api_key}'}
         )
-        self.haber_hafizasi = get_memory_for_llm("BIST Hisse haberleri",limit=5)
 
         self.akademik_kurallar = """
         BİST AKADEMİK DÖNGÜ KURALLARI (Bekçioğlu vd., 2018):
@@ -236,7 +236,7 @@ class OllamaAgresif(BaseLLM):
             - Sentetik Baskı Skoru (SBS): {sbs} (En önemli momentum göstergen budur! 70 üstü füzeye bin demektir.)
             - 20 Günlük Kısa Vade Fibonacci Hedefi: {fib_20['fib_618']}
             - RSI, MACD, MACD_signal, SMA 20 / SMA 50, Bollinger Band Width, Hacim, Volatilite, Pivot seviyeleri, {ai_rapor}
-            - En son bist hakkındaki 5 haber eğer aralarında yorumu istenilen hissede varsa yorumunda kullan {self.haber_hafizasi}
+            - En son bist hakkındaki 5 haber eğer aralarında yorumu istenilen hissede varsa yorumunda kullan {get_memory_for_llm("BIST Hisse haberleri", limit=5)}
             
             Karar Mantığı:
             - SBS %70 üzerinde ve hacim artışı varsa agresif AL.
@@ -287,10 +287,13 @@ class OllamaAgresif(BaseLLM):
         return gemini_prompt
     
     def generate(self, df, ai_rapor, fib_20, sbs):
-        prompt = self.build_prompt(df, ai_rapor, fib_20, sbs)
+        system_prompt, user_prompt = self.build_prompt(
+            df, ai_rapor, fib_20, sbs
+        )
         
         messages = [
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
         ]
         
         try:
