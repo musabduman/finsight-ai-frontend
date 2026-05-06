@@ -145,7 +145,7 @@ def watchlist_sayfasi(get_stock_data, teknik_analiz):
             row.update({"Fiyat (₺)": "-", "Değişim %": "-", "RSI": "-", "Durum": f"Hata: {e}"})
 
         rows.append(row)
-        time.sleep(0.1)
+        time.sleep(1)
     
     progress_bar.empty()
 

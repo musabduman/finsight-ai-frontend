@@ -51,16 +51,24 @@ def normalize_symbol(symbol: str):
         clean_symbol += ".IS"
     return clean_symbol
 
-@st.cache_data(ttl=86400)
+@st.cache_data(ttl=5400)
 def get_price_data(symbol):
-    df = yf.download(symbol, period="3y", progress=False, multi_level_index=False)
+    import yfinance as yf
+    
+    for attempt in range(3):
+        try:
+            df = yf.download(symbol, period="3y", progress=False, 
+                           multi_level_index=False)
+            if not df.empty:
+                return df
+        except Exception as e:
+            if "RateLimit" in str(e) or "Too Many" in str(e):
+                time.sleep(5 * (attempt + 1))
+            else:
+                return df
+    return ValueError("Boş veri döndü")
 
-    if df.empty:
-        raise ValueError("Boş veri döndü")
-
-    return df   
-
-@st.cache_data(ttl=86400)
+@st.cache_data(ttl=5400)
 def get_fast_info(symbol):
     ticker=yf.Ticker(symbol).fast_info
     return dict(ticker)
