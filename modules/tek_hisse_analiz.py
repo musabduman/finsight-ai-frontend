@@ -1,7 +1,7 @@
 import time
 import streamlit as st
 
-from veri import get_stock, normalize_symbol
+from services.veri import get_stock, normalize_symbol
 from indicators.technical import teknik_analiz, get_temel_hesapla
 from services.haber import anlik_hisse_haberi_cek
 from services.hafıza import get_memory_for_llm
