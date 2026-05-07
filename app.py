@@ -38,21 +38,26 @@ dl_bot = deeplearning()
 gemini_bot = Gemini(api_key=kullanici_api_key)
 ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
 
-
 bist100_hisseler = [
-    "AEFES.IS", "AKBNK.IS", "ASELS.IS", "BIMAS.IS",
-    "EREGL.IS", "FROTO.IS", "GARAN.IS", "KCHOL.IS",
-    "THYAO.IS", "TUPRS.IS", "YKBNK.IS"
+    "AKBNK.IS", "GARAN.IS", "HALKB.IS", "ISCTR.IS", "SKBNK.IS","ASTOR.IS", "BERA.IS", "ENJSA.IS", "GESAN.IS", "GENIL.IS","RODRG.IS"
+    "TSKB.IS", "VAKBN.IS", "YKBNK.IS", "QNBFB.IS","KCHOL.IS", "SAHOL.IS", "DOHOL.IS", "EKGYO.IS", "ENKAI.IS","ULUSE.IS", "UYUM.IS"
+    "TTKOM.IS", "TCELL.IS","FROTO.IS", "TOASO.IS", "OTKAR.IS","TUPRS.IS", "PETKM.IS", "AGHOL.IS", "AKSEN.IS", "ZOREN.IS","SNPAM.IS",
+    "KONTR.IS", "ODAS.IS","EREGL.IS", "KRDMD.IS", "OYAKC.IS", "CEMTS.IS","AEFES.IS", "CCOLA.IS", "ULKER.IS", "PNSUT.IS", "BANVT.IS",
+    "TATGD.IS","BIMAS.IS", "MGROS.IS", "SOKM.IS","AKCNS.IS", "BOLUC.IS", "CIMSA.IS", "NUHCM.IS", "ADANA.IS","SISE.IS","TAVHL.IS", "TKFEN.IS",
+    "ASELS.IS", "HAVAS.IS", "LOGO.IS", "INDES.IS","THYAO.IS", "PGSUS.IS", "CLEBI.IS", "MAVI.IS","GUBRF.IS", "ECILC.IS", "DEVA.IS", "SELEC.IS",
+    "SASA.IS", "ALARK.IS", "ARCLK.IS", "VESTL.IS", "BRSAN.IS","HEKTS.IS", "KERVT.IS","AGESA.IS", "ANHYT.IS", "RAYSG.IS","TMSN.IS", "TURSG.IS",
+    "ISGYO.IS", "TRGYO.IS", "VKGYO.IS","KORDS.IS", "KOZAA.IS", "KOZAL.IS", "LUKSK.IS", "MPARK.IS","NETAS.IS", "PRKAB.IS", "QUAGR.IS", "REEDR.IS",  
 ]
 
 secim = st.sidebar.radio(
     "Mod",
-    ["İzleme Listesi","Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı"]
+    ["İzleme Listesi", "Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı"]
 )
 
-# --- TEK HİSSE ---
-if secim == "Tek Hisse Analizi":
-    # --- INPUT ---
+if secim == "İzleme Listesi":
+    watchlist_sayfasi(get_stock_data=get_stock_data, teknik_analiz=teknik_analiz)
+
+elif secim == "Tek Hisse Analizi":
     sembol_input = st.text_input("Hisse (THYAO, GARAN...)")
 
     if st.button("Analiz Et"):
@@ -67,21 +72,16 @@ if secim == "Tek Hisse Analizi":
             st.error(result["error"])
         else:
             st.subheader(result["symbol"])
-
             st.metric("Son Fiyat", result["son_fiyat"])
             st.metric("SBS", result["son_sbs"])
-
             st.write("### Gemini")
             st.markdown(result["gemini"])
-
             st.write("### Ollama")
             st.markdown(result["ollama"])
 
-# --- MEGA TARAMA ---
 elif secim == "Mega Tarama":
     mega_tarama(bist100_hisseler, dl_bot)
 
-# --- BIST30 ---
 elif secim == "BIST30 Tarama":
     bist30_tarama(
         get_stock_data=get_stock_data,
@@ -96,49 +96,42 @@ elif secim == "BIST30 Tarama":
         ollama_api=ollama_api_key,
     )
 
-# --- HABER ---
 elif secim == "Haber Akışı":
     haber_akisi()
 
-elif secim == "Watchlist":
-    watchlist_sayfasi(get_stock_data=get_stock_data, teknik_analiz=teknik_analiz)
 
+# --- CHAT (tanımdan sonra çağrılıyor) ---
 @st.fragment
 def chat_bolumu():
     st.markdown("### 💬 Asistan")
-    
-    # Geçmişi en tepede başlat
+
     if "chat_gecmisi" not in st.session_state:
         st.session_state.chat_gecmisi = []
 
-    # 1. EKRANA MESAJLARI BAS
     chat_container = st.container(height=350)
     with chat_container:
         for msg in st.session_state.chat_gecmisi:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    # 2. INPUT ALANI (En altta sabit durur)
     if prompt := st.chat_input("Borsa hakkında bir şey sor..."):
-        # Kullanıcı mesajını ekle ve ekrana bas
         st.session_state.chat_gecmisi.append({"role": "user", "content": prompt})
         st.session_state.chat_gecmisi = st.session_state.chat_gecmisi[-10:]
         with chat_container:
             with st.chat_message("user"):
                 st.write(prompt)
 
-        # 3. CEVAP ÜRET
         with chat_container:
             with st.chat_message("assistant"):
                 with st.spinner("Düşünüyorum..."):
-                    # Bağlamları topla
                     aktif_baglam = st.session_state.get("aktif_analiz_baglami", "Aktif analiz yok.")
-                    
                     try:
                         chat_bot = OllamaChat(api_key=ollama_api_key)
-                        cevap = chat_bot.generate(st.session_state.chat_gecmisi, 
-                                                  aktif_baglam=aktif_baglam,)
+                        cevap = chat_bot.generate(st.session_state.chat_gecmisi,
+                                                  aktif_baglam=aktif_baglam)
                         st.write(cevap)
                         st.session_state.chat_gecmisi.append({"role": "assistant", "content": cevap})
                     except Exception as e:
                         st.error(f"AI Hatası: {e}")
+
+chat_bolumu()

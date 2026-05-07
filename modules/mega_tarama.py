@@ -9,7 +9,7 @@ from indicators.technical import teknik_analiz
 def mega_tarama(bist100_hisseler, dl_bot):
 
     st.subheader("📊 BIST100 Hızlı Yapay Zeka Taraması")
-    st.markdown("Tüm hisseler tek seferde çekilir → hız + ban koruması")
+    st.markdown("Bu bölüm, BIST100 hisselerini hızlıca tarar ve yapay zeka destekli analizler sunar. **Not:** Bu işlem biraz zaman alabilir, lütfen sabırlı olun.")
 
     col1, col2 = st.columns([1, 1])
 

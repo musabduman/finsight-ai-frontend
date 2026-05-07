@@ -13,6 +13,7 @@ def tek_hisse_analizi(sembol_input, gemini_key, ollama_key, dl_bot):
 
     if not sembol_input:
         st.warning("Lütfen bir hisse gir.")
+        st.markdown("Bu alanda, analiz etmek istediğiniz hissenin sembolünü (örneğin THYAO, GARAN) yazabilirsiniz. Analiz butonuna bastığınızda, yapay zeka destekli detaylı bir rapor sunulacaktır.")
         return
 
     if not gemini_key:

@@ -64,6 +64,7 @@ def bist30_tarama(get_stock_data, teknik_analiz, dl_bot,
                   gemini_api, ollama_api):
 
     st.subheader("🎯 BIST30 Sinyal Avcısı")
+    st.markdown("Bu bölüm, BIST30 hisselerini tarar ve yapay zeka destekli analizler sunar. Sinyal kriterlerine uyan hisseler detaylı olarak incelenir. **Not:** Bu işlem biraz zaman alabilir, lütfen sabırlı olun.")
 
     bist30 = [
         "AKBNK","ALARK","ARCLK","ASELS","ASTOR","BIMAS","BRSAN","CCOLA",
