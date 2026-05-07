@@ -2,6 +2,7 @@ import pandas as pd
 import yfinance as yf
 import streamlit as st
 import requests
+from time import time
 
 # ---------------------------
 # Session Fix (stabil veri çekme)
@@ -11,8 +12,6 @@ session.headers.update({
     "User-Agent": "Mozilla/5.0"
 })
 yf.shared._requests = session
-
-
 # ---------------------------
 # Symbol Normalize
 # ---------------------------
@@ -24,24 +23,18 @@ def normalize_symbol(symbol: str):
         clean += ".IS"
     
     return clean
-
-
 # ---------------------------
 # PRICE DATA
 # ---------------------------
 @st.cache_data(ttl=3600)
 def get_price_data(symbol):
     return yf.download(symbol, period="3y", progress=False)
-
-
 # ---------------------------
 # FAST INFO
 # ---------------------------
 @st.cache_data(ttl=3600)
 def get_fast_info(symbol):
     return yf.Ticker(symbol).fast_info
-
-
 # ---------------------------
 # MAIN STOCK FETCH
 # ---------------------------
@@ -61,11 +54,8 @@ def get_stock(symbol):
         print("get_stock error:", e)
         return clean, None, None
 
-
 # Alias - app.py ve watchlist.py get_stock_data adıyla çağırıyor
 get_stock_data = get_stock
-
-
 # ---------------------------
 # BULK STOCK FETCH
 # ---------------------------
@@ -94,31 +84,171 @@ def get_bulk_stocks(symbols: list):
     except Exception as e:
         print("get_bulk_stocks error:", e)
         return None
+# ---------------------------
+# FUNDAMENTAL CALCimport time
+
+def normalize_symbol(symbol: str) -> str:
+    tr_to_en = str.maketrans("ıiğüşöçIİĞÜŞÖÇ", "IIGUSOCIIGUSOC")
+    clean = str(symbol).translate(tr_to_en).upper().strip()
+    if not clean.endswith(".IS"):
+        clean += ".IS"
+    return clean
+
+def _flatten(df: pd.DataFrame, symbol: str = None) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame()
+    if isinstance(df.columns, pd.MultiIndex):
+        if symbol and symbol in df.columns.get_level_values(1):
+            df = df.xs(symbol, axis=1, level=1)
+        elif symbol and symbol in df.columns.get_level_values(0):
+            df = df[symbol]
+        else:
+            df.columns = df.columns.get_level_values(0)
+    # Tamamen boş satırları at
+    df = df.dropna(how="all")
+    return df
+
+# ---------------------------
+# PRICE DATA
+# ---------------------------
+@st.cache_data(ttl=3600)
+def get_price_data(symbol: str) -> pd.DataFrame:
+    for attempt in range(3):
+        try:
+            df = yf.download(
+                symbol,
+                period="3y",
+                progress=False,
+                auto_adjust=True,
+            )
+            df = _flatten(df, symbol)
+            if not df.empty and "Close" in df.columns:
+                return df
+        except Exception as e:
+            print(f"get_price_data hata (deneme {attempt+1}): {e}")
+            time.sleep(2 ** attempt)
+    return pd.DataFrame()
+
+
+# ---------------------------
+# FAST INFO
+# ---------------------------
+@st.cache_data(ttl=3600)
+def get_fast_info(symbol: str):
+    try:
+        return yf.Ticker(symbol).fast_info
+    except Exception as e:
+        print(f"get_fast_info hata: {e}")
+        return {}
+
+
+# ---------------------------
+# MAIN STOCK FETCH
+# ---------------------------
+def get_stock(symbol: str):
+    clean = normalize_symbol(symbol)
+    try:
+        df   = get_price_data(clean)
+        info = get_fast_info(clean)
+
+        if df is None or df.empty or "Close" not in df.columns:
+            print(f"get_stock: {clean} için veri yok veya Close kolonu eksik")
+            return clean, None, None
+
+        return clean, df, info
+
+    except Exception as e:
+        print(f"get_stock hata [{clean}]: {e}")
+        return clean, None, None
+
+
+# Alias
+get_stock_data = get_stock
+
+
+# ---------------------------
+# BULK STOCK FETCH
+# ---------------------------
+@st.cache_data(ttl=3600)
+def get_bulk_stocks(symbols: list) -> dict:
+    """Tüm sembolleri tek seferde çeker. {clean_symbol: df} dict döner."""
+    try:
+        clean_symbols = [normalize_symbol(s) for s in symbols]
+        symbols_str   = " ".join(clean_symbols)
+
+        raw = yf.download(
+            symbols_str,
+            period="3y",
+            progress=False,
+            auto_adjust=True,
+            group_by="ticker",
+        )
+
+        if raw is None or raw.empty:
+            print("get_bulk_stocks: ham veri boş geldi")
+            return None
+
+        result = {}
+        for clean in clean_symbols:
+            try:
+                if isinstance(raw.columns, pd.MultiIndex):
+                    lvl0 = raw.columns.get_level_values(0)
+                    lvl1 = raw.columns.get_level_values(1)
+
+                    if clean in lvl0:
+                        df = raw[clean].copy()
+                    elif clean in lvl1:
+                        df = raw.xs(clean, axis=1, level=1).copy()
+                    else:
+                        continue
+                else:
+                    df = raw.copy()
+
+                df = _flatten(df, clean)
+
+                if not df.empty and "Close" in df.columns:
+                    result[clean] = df
+                else:
+                    print(f"bulk: {clean} için Close kolonu yok, atlandı")
+
+            except Exception as e:
+                print(f"bulk parse hata [{clean}]: {e}")
+                continue
+
+        return result if result else None
+
+    except Exception as e:
+        print(f"get_bulk_stocks hata: {e}")
+        return None
 
 
 # ---------------------------
 # FUNDAMENTAL CALC
 # ---------------------------
-def get_temel_hesapla(symbol):
-    ticker = yf.Ticker(symbol)
-
+def get_temel_hesapla(symbol: str) -> dict:
     try:
-        income = ticker.financials
+        ticker = yf.Ticker(symbol)
+        income  = ticker.financials
         balance = ticker.balance_sheet
-        fast = ticker.fast_info
+        fast    = ticker.fast_info
 
-        net_kar = income.loc['Net Income'].iloc[0]
-        ozkaynak = balance.loc['Stockholders Equity'].iloc[0]
-        piyasa_degeri = fast['market_cap']
+        net_kar       = income.loc["Net Income"].iloc[0]
+        ozkaynak      = balance.loc["Stockholders Equity"].iloc[0]
+        # fast_info dict-like, iki farklı key adını dene
+        piyasa_degeri = (
+            fast.get("market_cap")
+            or fast.get("marketCap")
+            or 0
+        )
 
-        fk = piyasa_degeri / net_kar if net_kar > 0 else "Zararda"
+        fk    = piyasa_degeri / net_kar  if net_kar  > 0 else "Zararda"
         pd_dd = piyasa_degeri / ozkaynak if ozkaynak > 0 else "Yok"
 
         return {
-            "FK": round(fk, 2) if isinstance(fk, (int, float)) else fk,
+            "FK":    round(fk,    2) if isinstance(fk,    (int, float)) else fk,
             "PD/DD": round(pd_dd, 2) if isinstance(pd_dd, (int, float)) else pd_dd,
         }
 
     except Exception as e:
-        print("temel hesap hata:", e)
+        print(f"get_temel_hesapla hata [{symbol}]: {e}")
         return {"FK": "Yok", "PD/DD": "Yok"}
