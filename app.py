@@ -38,8 +38,6 @@ dl_bot = deeplearning()
 gemini_bot = Gemini(api_key=kullanici_api_key)
 ollama_bot = OllamaAgresif(api_key=ollama_api_key, model="gpt-oss:120b-cloud")
 
-# --- INPUT ---
-sembol_input = st.text_input("Hisse (THYAO, GARAN...)")
 
 bist100_hisseler = [
     "AEFES.IS", "AKBNK.IS", "ASELS.IS", "BIMAS.IS",
@@ -49,11 +47,14 @@ bist100_hisseler = [
 
 secim = st.sidebar.radio(
     "Mod",
-    ["Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı", "Watchlist"]
+    ["İzleme Listesi","Tek Hisse Analizi", "Mega Tarama", "BIST30 Tarama", "Haber Akışı"]
 )
 
 # --- TEK HİSSE ---
 if secim == "Tek Hisse Analizi":
+    # --- INPUT ---
+    sembol_input = st.text_input("Hisse (THYAO, GARAN...)")
+
     if st.button("Analiz Et"):
         result = tek_hisse_run(
             sembol_input,
