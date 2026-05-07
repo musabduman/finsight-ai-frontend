@@ -134,13 +134,22 @@ def get_price_data(symbol: str) -> pd.DataFrame:
 # FAST INFO
 # ---------------------------
 @st.cache_data(ttl=3600)
-def get_fast_info(symbol: str):
+def get_fast_info(symbol):
     try:
-        return yf.Ticker(symbol).fast_info
+        fi = yf.Ticker(symbol).fast_info
+        return {
+            "last_price":               fi.last_price,
+            "market_cap":               fi.market_cap,
+            "year_high":                fi.year_high,
+            "year_low":                 fi.year_low,
+            "fifty_day_average":        fi.fifty_day_average,
+            "two_hundred_day_average":  fi.two_hundred_day_average,
+            "previous_close":           fi.previous_close,
+            "shares":                   fi.shares,
+        }
     except Exception as e:
-        print(f"get_fast_info hata: {e}")
+        print(f"get_fast_info hata [{symbol}]: {e}")
         return {}
-
 
 # ---------------------------
 # MAIN STOCK FETCH
