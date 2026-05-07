@@ -225,30 +225,57 @@ def get_bulk_stocks(symbols: list) -> dict:
 # ---------------------------
 # FUNDAMENTAL CALC
 # ---------------------------
-def get_temel_hesapla(symbol: str) -> dict:
+def get_temel_hesapla(symbol):
+    ticker = yf.Ticker(symbol)
+    sonuc = {}
+
     try:
-        ticker = yf.Ticker(symbol)
-        income  = ticker.financials
-        balance = ticker.balance_sheet
-        fast    = ticker.fast_info
+        fast = ticker.fast_info
+        piyasa_degeri = fast.market_cap
 
-        net_kar       = income.loc["Net Income"].iloc[0]
-        ozkaynak      = balance.loc["Stockholders Equity"].iloc[0]
-        # fast_info dict-like, iki farklı key adını dene
-        piyasa_degeri = (
-            fast.get("market_cap")
-            or fast.get("marketCap")
-            or 0
-        )
+        sonuc["Piyasa Değeri"] = f"{piyasa_degeri / 1e9:.1f}B ₺"
+        sonuc["52H Yüksek"] = round(fast.year_high, 2)
+        sonuc["52H Düşük"]  = round(fast.year_low,  2)
+    except Exception as e:
+        print(f"fast_info hata [{symbol}]: {e}")
+        piyasa_degeri = 0
+        sonuc.setdefault("Piyasa Değeri", "Yok")
 
-        fk    = piyasa_degeri / net_kar  if net_kar  > 0 else "Zararda"
-        pd_dd = piyasa_degeri / ozkaynak if ozkaynak > 0 else "Yok"
+    try:
+        income = ticker.financials
 
-        return {
-            "FK":    round(fk,    2) if isinstance(fk,    (int, float)) else fk,
-            "PD/DD": round(pd_dd, 2) if isinstance(pd_dd, (int, float)) else pd_dd,
-        }
+        # yfinance BIST'te 'Net Income' yerine 'Net Income Continuous Operations' döndürüyor
+        net_kar = None
+        for aday in ["Net Income", "Net Income Continuous Operations", "Net Income Common Stockholders"]:
+            if aday in income.index:
+                net_kar = income.loc[aday].iloc[0]
+                break
+
+        if net_kar and piyasa_degeri and net_kar > 0:
+            sonuc["FK"] = round(piyasa_degeri / net_kar, 2)
+        else:
+            sonuc["FK"] = "Zararda" if (net_kar and net_kar <= 0) else "Yok"
 
     except Exception as e:
-        print(f"get_temel_hesapla hata [{symbol}]: {e}")
-        return {"FK": "Yok", "PD/DD": "Yok"}
+        print(f"FK hata [{symbol}]: {e}")
+        sonuc["FK"] = "Yok"
+
+    try:
+        balance = ticker.balance_sheet
+
+        ozkaynak = None
+        for aday in ["Stockholders Equity", "Total Equity Gross Minority Interest", "Common Stock Equity"]:
+            if aday in balance.index:
+                ozkaynak = balance.loc[aday].iloc[0]
+                break
+
+        if ozkaynak and piyasa_degeri and ozkaynak > 0:
+            sonuc["PD/DD"] = round(piyasa_degeri / ozkaynak, 2)
+        else:
+            sonuc["PD/DD"] = "Yok"
+
+    except Exception as e:
+        print(f"PD/DD hata [{symbol}]: {e}")
+        sonuc["PD/DD"] = "Yok"
+
+    return sonuc
