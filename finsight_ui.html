@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinSight AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #242840;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #3b82f6;
+    --accent-dim: rgba(59,130,246,0.12);
+    --green: #10b981;
+    --green-dim: rgba(16,185,129,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --purple: #8b5cf6;
+    --sidebar-w: 220px;
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  aside {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-name {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-name span {
+    color: var(--accent);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  nav {
+    padding: 12px 8px;
+    flex: 1;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    padding: 0 8px;
+    margin: 12px 0 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+
+  .nav-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .user-pill:hover { background: var(--surface2); }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .user-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .user-plan {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .page-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); }
+  .badge-blue  { background: var(--accent-dim); color: var(--accent); }
+  .badge-red   { background: var(--red-dim); color: var(--red); }
+
+  /* CONTENT */
+  .content {
+    padding: 24px;
+    flex: 1;
+  }
+
+  /* PAGE */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+
+  /* FORM */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  input[type="text"], input[type="password"], textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 9px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+
+  select option { background: var(--surface2); }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-ghost:hover { background: var(--surface3); }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  /* METRICS GRID */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-value.up { color: var(--green); }
+  .metric-value.down { color: var(--red); }
+
+  /* RESULT PANELS */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .result-grid { grid-template-columns: 1fr; }
+  }
+
+  .result-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .result-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  /* HABER AKIŞI */
+  .news-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .news-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .news-item:hover { border-color: var(--border2); }
+
+  .news-sentiment {
+    width: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  .news-body { flex: 1; }
+
+  .news-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .news-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 10px;
+  }
+
+  /* TARAMA TABLOSU */
+  .scan-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .scan-table th {
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .scan-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+
+  .scan-table tr:last-child td { border-bottom: none; }
+
+  .scan-table tr:hover td { background: var(--surface2); }
+
+  /* WATCHLIST */
+  .wl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+  .wl-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .wl-card:hover { border-color: var(--accent); }
+
+  .wl-symbol {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .wl-price {
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  .wl-change {
+    font-size: 12px;
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
+  .wl-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .wl-card:hover .wl-remove { opacity: 1; }
+  .wl-remove:hover { color: var(--red); }
+
+  .add-symbol-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  /* CHAT */
+  .chat-wrap {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 57px);
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    max-width: 80%;
+  }
+
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .msg.user .msg-avatar { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+  .msg.ai .msg-avatar { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+
+  .msg-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .msg.user .msg-bubble { background: var(--accent); color: #fff; border-radius: 12px 4px 12px 12px; }
+  .msg.ai .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px 12px 12px 12px; }
+
+  .chat-input-area {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .chat-input-area textarea {
+    flex: 1;
+    resize: none;
+    min-height: 42px;
+    max-height: 120px;
+    border-radius: 10px;
+  }
+
+  /* LOADING */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* LOGIN */
+  .login-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 32px;
+    width: 360px;
+  }
+
+  .login-logo {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .login-logo span { color: var(--accent); }
+
+  .login-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .form-field {
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--red);
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* EMPTY STATE */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  /* TEMA TOGGLE */
+  .theme-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .theme-opt {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .theme-opt.active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+
+  .theme-opt:hover:not(.active) { color: var(--text); }
+
+  /* TOGGLE SWITCH */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toggle-row:last-child { border-bottom: none; }
+
+  .toggle-label { font-size: 13px; color: var(--text); }
+  .toggle-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .switch-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--surface3);
+    border-radius: 22px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid var(--border2);
+  }
+
+  .switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 2px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .switch input:checked + .switch-slider { background: var(--accent-dim); border-color: var(--accent); }
+  .switch input:checked + .switch-slider::before { transform: translateX(18px); background: var(--accent); }
+
+  /* PROFILE SECTIONS */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 800px) { .profile-grid { grid-template-columns: 1fr; } }
+
+  .profile-avatar-big {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-val { font-size: 20px; font-weight: 600; font-family: var(--mono); color: var(--accent); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* API KEY */
+  .api-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .api-val {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* LIGHT THEME */
+  body.light {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f1f3;
+    --surface3: #e4e6ea;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.13);
+    --text: #111318;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-dim: rgba(37,99,235,0.1);
+    --green: #059669;
+    --green-dim: rgba(5,150,105,0.1);
+    --red: #dc2626;
+    --red-dim: rgba(220,38,38,0.1);
+    --amber: #d97706;
+    --amber-dim: rgba(217,119,6,0.1);
+  }
+
+  /* SIGNAL TAG */
+  .signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">Fin<span>Sight</span> AI</div>
+    <p class="login-sub">BIST analiz platformuna giriş yapın</p>
+
+    <div class="form-field">
+      <label>E-posta</label>
+      <input type="text" id="loginEmail" placeholder="kullanici@mail.com">
+    </div>
+    <div class="form-field">
+      <label>Şifre</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <div id="loginErr" class="error-msg">E-posta veya şifre hatalı.</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center;" onclick="doLogin()">Giriş yap</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside>
+  <div class="logo">
+    <div class="logo-name">Fin<span>Sight</span> AI</div>
+    <div class="logo-sub">BIST Analiz Platformu</div>
+  </div>
+
+  <nav>
+    <div class="nav-label">Analiz</div>
+    <button class="nav-item active" onclick="goto('tek')" id="nav-tek">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Tek Hisse
+    </button>
+    <button class="nav-item" onclick="goto('bist30')" id="nav-bist30">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      BIST30 Tarama
+    </button>
+    <button class="nav-item" onclick="goto('mega')" id="nav-mega">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Mega Tarama
+    </button>
+
+    <div class="nav-label">İzleme</div>
+    <button class="nav-item" onclick="goto('watchlist')" id="nav-watchlist">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      İzleme Listesi
+    </button>
+    <button class="nav-item" onclick="goto('haber')" id="nav-haber">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><path d="M4 2v16"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>
+      Haber Akışı
+    </button>
+    <button class="nav-item" onclick="goto('chat')" id="nav-chat">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      AI Asistan
+    </button>
+
+    <div class="nav-label">Hesap</div>
+    <button class="nav-item" onclick="goto('profil')" id="nav-profil">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Profil
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar" id="userAvatar">?</div>
+      <div>
+        <div class="user-name" id="userName">—</div>
+        <div class="user-plan">Pro Plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Tek Hisse Analizi</div>
+    <div class="topbar-right">
+      <span class="badge badge-green" id="marketStatus">● Piyasa Açık</span>
+      <button class="btn btn-ghost" onclick="doLogout()" style="padding:6px 12px;font-size:12px;">Çıkış</button>
+    </div>
+  </div>
+
+  <!-- TEK HİSSE -->
+  <div class="page active content" id="page-tek">
+    <div class="card">
+      <div class="card-title">Hisse Analizi</div>
+      <div class="input-row">
+        <div class="input-group" style="max-width:200px;">
+          <label>Hisse kodu</label>
+          <input type="text" id="sembolInput" placeholder="THYAO, GARAN..." style="text-transform:uppercase;" onkeydown="if(event.key==='Enter') analizEt()">
+        </div>
+        <div class="input-group" style="max-width:160px;">
+          <label>Mod</label>
+          <select id="analizMod">
+            <option value="full">Tam Analiz</option>
+            <option value="teknik">Sadece Teknik</option>
+            <option value="temel">Sadece Temel</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" id="analizBtn" onclick="analizEt()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7M12 5v14"/></svg>
+            Analiz et
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="analizSonuc" style="display:none;">
+      <div class="metrics" id="metricsRow"></div>
+      <div class="result-grid">
+        <div class="result-panel">
+          <div class="result-header">
+            <div class="result-dot" style="background:var(--accent);"></div>
+            <span style="font-size:13px;font-weight:600;">Gemini — Uzman Analiz</span>
+          </div>
+          <div class="result-body" id="geminiResult">—</div>
+        </div>
+        <div class="result-panel">
+          <div class="result-header">
+            <div class="result-dot" style="background:var(--amber);"></div>
+            <span style="font-size:13px;font-weight:600;">Ollama — Agresif Trader</span>
+          </div>
+          <div class="result-body" id="ollamaResult">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="analizEmpty" class="empty">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">Analiz başlatın</div>
+      <div class="empty-sub">Hisse kodunu girin ve analiz et'e tıklayın</div>
+    </div>
+  </div>
+
+  <!-- BIST30 TARAMA -->
+  <div class="page content" id="page-bist30">
+    <div class="card">
+      <div class="card-title">BIST 30 Tarama</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="input-group" style="max-width:160px;">
+          <label>Filtre</label>
+          <select id="bist30Filtre">
+            <option value="all">Tümü</option>
+            <option value="al">AL sinyali</option>
+            <option value="sat">SAT sinyali</option>
+            <option value="rsi_dusuk">RSI &lt; 30</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" id="bist30Btn" onclick="bist30Tara()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Taramayı başlat
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bist30Table" style="display:none;" class="card" style="padding:0;">
+      <table class="scan-table" id="bist30Data">
+        <thead>
+          <tr>
+            <th>Hisse</th>
+            <th>Fiyat</th>
+            <th>Değ%</th>
+            <th>RSI</th>
+            <th>SBS</th>
+            <th>Hacim</th>
+            <th>Karar</th>
+          </tr>
+        </thead>
+        <tbody id="bist30Body"></tbody>
+      </table>
+    </div>
+
+    <div id="bist30Empty" class="empty">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">BIST 30 taraması</div>
+      <div class="empty-sub">Taramayı başlat butonuna basın</div>
+    </div>
+  </div>
+
+  <!-- MEGA TARAMA -->
+  <div class="page content" id="page-mega">
+    <div class="card">
+      <div class="card-title">Mega Tarama — BIST 100</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Tüm BIST 100 hisselerini deep learning modeli ile tarar. Yüksek güvenilirlikli AL sinyallerini sıralar.</p>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="input-group" style="max-width:160px;">
+          <label>Min. güven skoru</label>
+          <select id="megaMinGuven">
+            <option value="60">%60+</option>
+            <option value="70" selected>%70+</option>
+            <option value="80">%80+</option>
+            <option value="90">%90+</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="megaBtn" onclick="megaTara()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Mega tarama başlat
+        </button>
+      </div>
+    </div>
+
+    <div id="megaProgress" style="display:none;" class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;" id="megaProgressText">Taranıyor...</div>
+      <div style="height:4px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+        <div id="megaBar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width 0.3s;"></div>
+      </div>
+    </div>
+
+    <div id="megaResults" style="display:none;" class="card" style="padding:0;">
+      <table class="scan-table">
+        <thead>
+          <tr><th>Sıra</th><th>Hisse</th><th>Fiyat</th><th>Tahmin</th><th>Güven</th><th>Yön</th><th></th></tr>
+        </thead>
+        <tbody id="megaBody"></tbody>
+      </table>
+    </div>
+
+    <div id="megaEmpty" class="empty">
+      <div class="empty-icon">⚡</div>
+      <div class="empty-title">Mega tarama</div>
+      <div class="empty-sub">BIST 100 hisselerini tek tıkla filtreleyin</div>
+    </div>
+  </div>
+
+  <!-- İZLEME LİSTESİ -->
+  <div class="page content" id="page-watchlist">
+    <div class="card">
+      <div class="card-title">İzleme Listesi</div>
+      <div class="add-symbol-row">
+        <input type="text" id="wlInput" placeholder="Hisse kodu (THYAO)" style="max-width:200px;text-transform:uppercase;" onkeydown="if(event.key==='Enter') wlEkle()">
+        <button class="btn btn-primary" onclick="wlEkle()">Ekle</button>
+        <button class="btn btn-ghost" onclick="wlGuncelle()" style="margin-left:auto;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 13a10 10 0 1 1-1.4-5.4"/></svg>
+          Güncelle
+        </button>
+      </div>
+      <div class="wl-grid" id="wlGrid">
+        <div class="empty" style="grid-column:1/-1;padding:24px;">
+          <div class="empty-icon">📌</div>
+          <div class="empty-title">Liste boş</div>
+          <div class="empty-sub">Takip etmek istediğiniz hisseleri ekleyin</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABER AKIŞI -->
+  <div class="page content" id="page-haber">
+    <div class="card">
+      <div class="card-title">Haber Akışı</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="haberFiltrele('all')" id="hf-all">Tümü</button>
+        <button class="btn btn-ghost" onclick="haberFiltrele('pozitif')" id="hf-pozitif">Pozitif</button>
+        <button class="btn btn-ghost" onclick="haberFiltrele('negatif')" id="hf-negatif">Negatif</button>
+        <button class="btn btn-ghost" onclick="haberFiltrele('notr')" id="hf-notr">Nötr</button>
+      </div>
+      <div class="news-list" id="newsList"></div>
+    </div>
+  </div>
+
+  <!-- PROFIL -->
+  <div class="page content" id="page-profil">
+
+    <div class="profile-grid">
+
+      <!-- SOL: Hesap Bilgileri -->
+      <div>
+        <div class="card">
+          <div class="card-title">Hesap</div>
+          <div class="profile-avatar-big" id="profileAvatarBig">?</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:2px;" id="profileName">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;" id="profileEmail">—</div>
+          <span class="badge badge-blue">Pro Plan</span>
+
+          <div class="stat-row">
+            <div class="stat-box">
+              <div class="stat-val" id="statAnaliz">0</div>
+              <div class="stat-lbl">Analiz</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" id="statWL">0</div>
+              <div class="stat-lbl">İzleme</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" id="statChat">0</div>
+              <div class="stat-lbl">Mesaj</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Şifre Değiştir -->
+        <div class="card">
+          <div class="card-title">Şifre değiştir</div>
+          <div class="input-group" style="margin-bottom:10px;">
+            <label>Mevcut şifre</label>
+            <input type="password" id="sifreMevcut" placeholder="••••••••">
+          </div>
+          <div class="input-group" style="margin-bottom:10px;">
+            <label>Yeni şifre</label>
+            <input type="password" id="sifreYeni" placeholder="En az 8 karakter">
+          </div>
+          <div class="input-group" style="margin-bottom:14px;">
+            <label>Yeni şifre tekrar</label>
+            <input type="password" id="sifreYeniTekrar" placeholder="••••••••">
+          </div>
+          <div id="sifreErr" style="font-size:12px;color:var(--red);margin-bottom:10px;display:none;"></div>
+          <button class="btn btn-primary" onclick="sifreDegistir()">Şifreyi güncelle</button>
+        </div>
+      </div>
+
+      <!-- SAĞ: Ayarlar -->
+      <div>
+        <!-- Tema -->
+        <div class="card">
+          <div class="card-title">Tema</div>
+          <div class="theme-toggle">
+            <button class="theme-opt active" id="themeKoyu" onclick="temaDegistir('koyu')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              Koyu
+            </button>
+            <button class="theme-opt" id="themeAcik" onclick="temaDegistir('acik')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Açık
+            </button>
+          </div>
+        </div>
+
+        <!-- Bildirimler -->
+        <div class="card">
+          <div class="card-title">Bildirimler</div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">AL/SAT sinyalleri</div>
+              <div class="toggle-sub">Tarama tamamlandığında bildir</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="notifSignal" checked onchange="ayarKaydet()">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Haber bildirimleri</div>
+              <div class="toggle-sub">Kritik BIST haberleri gelince</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="notifHaber" onchange="ayarKaydet()">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Piyasa açılış / kapanış</div>
+              <div class="toggle-sub">10:00 ve 18:00 hatırlatıcısı</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="notifPiyasa" checked onchange="ayarKaydet()">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- API Anahtarları -->
+        <div class="card">
+          <div class="card-title">API anahtarları</div>
+
+          <div style="margin-bottom:14px;">
+            <label>Gemini API Key</label>
+            <div class="api-row">
+              <div class="api-val" id="geminiKeyDisplay">••••••••••••••••••••</div>
+              <button class="btn btn-ghost" style="padding:7px 10px;" onclick="keyGoster('gemini')" id="geminiKeyBtn" title="Göster/Gizle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <button class="btn btn-ghost" style="padding:7px 10px;" onclick="keyCopy('gemini')" title="Kopyala">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label>Ollama API Key</label>
+            <div class="api-row">
+              <div class="api-val" id="ollamaKeyDisplay">••••••••••••••••••••</div>
+              <button class="btn btn-ghost" style="padding:7px 10px;" onclick="keyGoster('ollama')" id="ollamaKeyBtn" title="Göster/Gizle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <button class="btn btn-ghost" style="padding:7px 10px;" onclick="keyCopy('ollama')" title="Kopyala">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:8px;">
+            <input type="text" id="yeniGeminiKey" placeholder="Yeni Gemini key gir..." style="font-family:var(--mono);font-size:12px;">
+            <button class="btn btn-primary" style="white-space:nowrap;" onclick="keyGuncelle('gemini')">Kaydet</button>
+          </div>
+        </div>
+
+        <!-- Tehlike Zonu -->
+        <div class="card" style="border-color:rgba(239,68,68,0.2);">
+          <div class="card-title" style="color:var(--red);">Tehlike zonu</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Bu işlemler geri alınamaz.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-danger" onclick="verileriTemizle()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Tüm verileri temizle
+            </button>
+            <button class="btn btn-danger" onclick="hesabiSil()">Hesabı sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toastMsg"></span>
+  </div>
+  <div class="page" id="page-chat">
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg ai">
+          <div class="msg-avatar">AI</div>
+          <div class="msg-bubble">Merhaba! Ben FinSight AI asistanınım. BIST hisseleri, teknik analiz veya piyasa haberleri hakkında sorularınızı yanıtlayabilirim.</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <textarea id="chatInput" placeholder="Borsa hakkında bir şey sor..." rows="1" onkeydown="chatKeydown(event)"></textarea>
+        <button class="btn btn-primary" onclick="chatGonder()" id="chatBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────
+const state = {
+  user: null,
+  apiKeys: { gemini: '', ollama: '' }, // fakeKeys yerine artık gerçek state kullanıyoruz
+  watchlist: JSON.parse(localStorage.getItem('wl') || '[]'),
+  chatHistory: [],
+  haberler: [],
+  aktifAnalizBaglami: ''
+};
+
+const RENDER_API = "https://finsight-ai-backend-u1cw.onrender.com";
+
+// ─── LOGIN ─────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { showErr('E-posta ve şifre gerekli.'); return; }
+  // Demo: herhangi bir giriş kabul edilir, gerçek projede API çağrısı yapılacak
+const btn = document.querySelector('.login-box .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span> Giriş yapılıyor...';
+  btn.disabled = true;
+
+  try {
+    // Render API'sine login isteği atıyoruz
+    const res = await fetch(`${RENDER_API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kullanici_bilgisi: email, password: pass })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      state.user = { 
+        email: data.email, 
+        username: data.username, 
+        initials: data.username.substring(0,2).toUpperCase() 
+      };
+      
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('userAvatar').textContent = state.user.initials;
+      document.getElementById('userName').textContent = state.user.username;
+
+      // Kullanıcının API Key'lerini Render'dan çekiyoruz
+      try {
+        const keyRes = await fetch(`${RENDER_API}/get_keys/${data.email}`);
+        if(keyRes.ok) {
+            const keys = await keyRes.json();
+            state.apiKeys.gemini = keys.gemini_key || '';
+            state.apiKeys.ollama = keys.ollama_key || '';
+        }
+      } catch(e) { console.warn("Keyler çekilemedi."); }
+
+      haberYukle();
+      profilGuncelle();
+      wlRender(); // Watchlist'i getir
+    } else {
+      showErr('E-posta veya şifre hatalı.');
+    }
+  } catch(e) {
+    showErr('Sunucuya bağlanılamadı.');
+  } finally {
+    btn.innerHTML = 'Giriş yap';
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  state.user = null;
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ─── NAVİGASYON ────────────────────────────────────────────
+const pageTitles = {
+  tek: 'Tek Hisse Analizi',
+  bist30: 'BIST 30 Tarama',
+  mega: 'Mega Tarama',
+  watchlist: 'İzleme Listesi',
+  haber: 'Haber Akışı',
+  chat: 'AI Asistan',
+  profil: 'Profil ve Ayarlar'
+};
+
+function goto(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[id];
+  if (id === 'watchlist') wlRender();
+}
+
+// ─── TEK HİSSE ANALİZİ ────────────────────────────────────
+async function analizEt() {
+  const sembol = document.getElementById('sembolInput').value.trim().toUpperCase();
+  if (!sembol) return;
+
+  const btn = document.getElementById('analizBtn');
+  btn.innerHTML = '<span class="spinner"></span> Analiz ediliyor...';
+  btn.disabled = true;
+  document.getElementById('analizEmpty').style.display = 'none';
+  document.getElementById('analizSonuc').style.display = 'none';
+
+  try {
+    // FastAPI'ye POST isteği atıyoruz
+    const res = await fetch('http://127.0.0.1:8000/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sembol: sembol,
+        gemini_key: state.apiKeys.gemini, // Gerçek projede state'den veya auth'dan gelecek
+        ollama_key: state.apiKeys.ollama
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Sunucu hatası');
+    }
+
+    const data = await res.json(); // FastAPI'den dönen JSON verisi  
+    
+    document.getElementById('analizSonuc').style.display = 'block';
+    renderMetrics(data);
+    document.getElementById('geminiResult').textContent = data.gemini;
+    document.getElementById('ollamaResult').textContent = data.ollama;
+    state.aktifAnalizBaglami = `${sembol} analizi: ${data.karar}`;
+  
+  } catch(e) {
+    alert('Analiz hatası: ' + e.message);
+    document.getElementById('analizEmpty').style.display = 'block';
+  } finally {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7M12 5v14"/></svg> Analiz et';
+    btn.disabled = false;
+  }
+}
+
+function renderMetrics(data) {
+  const row = document.getElementById('metricsRow');
+  const changeColor = data.degisim >= 0 ? 'up' : 'down';
+  const changeSign = data.degisim >= 0 ? '+' : '';
+  row.innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Hisse</div>
+      <div class="metric-value">${data.symbol}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Son fiyat</div>
+      <div class="metric-value">₺${data.son_fiyat.toFixed(2)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Değişim</div>
+      <div class="metric-value ${changeColor}">${changeSign}${data.degisim.toFixed(2)}%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">SBS skoru</div>
+      <div class="metric-value ${data.sbs > 50 ? 'up' : 'down'}">${data.sbs.toFixed(1)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">RSI</div>
+      <div class="metric-value ${data.rsi < 30 ? 'up' : data.rsi > 70 ? 'down' : ''}">${data.rsi.toFixed(1)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Karar</div>
+      <div class="metric-value" style="font-size:14px;">${data.karar}</div>
+    </div>
+  `;
+}
+
+// ─── BIST30 TARAMA ─────────────────────────────────────────
+async function bist30Tara() {
+  const btn = document.getElementById('bist30Btn');
+  btn.innerHTML = '<span class="spinner"></span> Taranıyor...';
+  btn.disabled = true;
+  document.getElementById('bist30Empty').style.display = 'none';
+  document.getElementById('bist30Table').style.display = 'none';
+
+  const bist30 = ['AKBNK','GARAN','ISCTR','YKBNK','SISE','EREGL','KCHOL','SAHOL','THYAO','TCELL',
+    'TUPRS','BIMAS','ASELS','FROTO','TOASO','HALKB','VAKBN','PGSUS','ARCLK','VESTL',
+    'EKGYO','ENKAI','TAVHL','TKFEN','KOZAA','TTKOM','MAVI','CCOLA','AEFES','PETKM'];
+
+  const filtre = document.getElementById('bist30Filtre').value;
+  const tbody = document.getElementById('bist30Body');
+  tbody.innerHTML = '';
+  
+  let bulunanSayisi = 0;
+
+  for (let sembol of bist30) {
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Filtreleme mantığı
+        const karar = data.yon.includes('YÜKSELİŞ') ? 'AL' : 'SAT';
+        if (filtre === 'al' && karar !== 'AL') continue;
+        if (filtre === 'sat' && karar !== 'SAT') continue;
+        if (filtre === 'rsi_dusuk' && data.rsi >= 30) continue;
+
+        bulunanSayisi++;
+        const dColor = data.yon === 'YÜKSELİŞ' ? 'var(--green)' : 'var(--red)';
+        const kararColor = karar === 'AL' ? 'badge-green' : 'badge-red';
+
+        tbody.innerHTML += `<tr>
+          <td style="font-weight:600;">${data.sembol}</td>
+          <td>₺${data.fiyat.toFixed(2)}</td>
+          <td>-</td> <td style="color:${data.rsi<30?'var(--green)':data.rsi>70?'var(--red)':'var(--text)'}">${data.rsi}</td>
+          <td style="color:${data.sbs>50?'var(--green)':'var(--red)'}">${data.sbs}</td>
+          <td><span class="badge badge-blue">%${data.guven} Güven</span></td>
+          <td><span class="badge ${kararColor}">${data.yon}</span></td>
+        </tr>`;
+      }
+    } catch(e) {
+      console.warn(`${sembol} taranamadı.`);
+    }
+  }
+
+  if(bulunanSayisi === 0) {
+      document.getElementById('bist30Empty').style.display = 'flex';
+      document.getElementById('bist30Empty').innerHTML = `<div class="empty-icon">📭</div><div class="empty-title">Sonuç bulunamadı</div><div class="empty-sub">Filtre kriterlerinize uyan hisse yok.</div>`;
+  } else {
+      document.getElementById('bist30Table').style.display = 'block';
+  }
+
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Taramayı başlat';
+  btn.disabled = false;
+}
+
+// ─── MEGA TARAMA ───────────────────────────────────────────
+async function megaTara() {
+  const btn = document.getElementById('megaBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Başlatılıyor...';
+  document.getElementById('megaEmpty').style.display = 'none';
+  document.getElementById('megaResults').style.display = 'none';
+  document.getElementById('megaProgress').style.display = 'block';
+
+  // Test için listeyi kısalttım, canlıda tam BIST100 listeni koyabilirsin
+  const bist100 = ['THYAO', 'GARAN', 'ASELS', 'AKBNK', 'TUPRS']; 
+
+  const minGuven = parseInt(document.getElementById('megaMinGuven').value);
+  const results = [];
+
+  for (let i = 0; i < bist100.length; i++) {
+    const sembol = bist100[i];
+    
+    // Progress Bar Güncellemesi
+    const pct = Math.round((i+1) / bist100.length * 100);
+    document.getElementById('megaBar').style.width = pct + '%';
+    document.getElementById('megaProgressText').textContent = `${sembol} taranıyor... (${i+1}/${bist100.length})`;
+
+    try {
+      // FastAPI Quick-Scan endpoint'ine istek at
+      const res = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Sadece güven skoru filtreyi geçenleri listeye ekle
+        if (data.guven >= minGuven) {
+          results.push({
+            sembol: data.sembol,
+            fiyat: data.fiyat.toFixed(2),
+            tahmin: data.tahmin.toFixed(2),
+            guven: data.guven.toFixed(1),
+            yon: data.yon.includes('Yukarı') || data.yon.includes('Al') ? '↑ Yükseliş' : '↓ Düşüş'
+          });
+        }
+      }
+    } catch (e) {
+      console.warn(`${sembol} taranırken hata oluştu:`, e);
+    }
+  }
+
+  // Güven skoruna göre büyükten küçüğe sırala
+  results.sort((a, b) => parseFloat(b.guven) - parseFloat(a.guven));
+
+  const tbody = document.getElementById('megaBody');
+  tbody.innerHTML = results.map((r, i) => `
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-weight:600;">${r.sembol}</td>
+      <td>₺${r.fiyat}</td>
+      <td>₺${r.tahmin}</td>
+      <td><span class="badge badge-blue">%${parseFloat(r.guven).toFixed(0)}</span></td>
+      <td style="color:${r.yon.includes('↑')?'var(--green)':'var(--red)'}">${r.yon}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="quickAnaliz('${r.sembol}')">Analiz →</button></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('megaProgress').style.display = 'none';
+  document.getElementById('megaResults').style.display = 'block';
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Mega tarama başlat';
+  btn.disabled = false;
+}
+
+function quickAnaliz(sembol) {
+  document.getElementById('sembolInput').value = sembol;
+  goto('tek');
+  analizEt();
+}
+
+// ─── WATCHLIST ─────────────────────────────────────────────
+function wlEkle() {
+  let val = document.getElementById('wlInput').value.trim().toUpperCase();
+  if (!val) return;
+  if (!val.endsWith('.IS')) val += '.IS';
+  if (!state.watchlist.includes(val)) {
+    state.watchlist.push(val);
+    localStorage.setItem('wl', JSON.stringify(state.watchlist));
+  }
+  document.getElementById('wlInput').value = '';
+  wlRender();
+}
+
+function wlSil(sembol) {
+  state.watchlist = state.watchlist.filter(s => s !== sembol);
+  localStorage.setItem('wl', JSON.stringify(state.watchlist));
+  wlRender();
+}
+
+async function wlGuncelle() {
+  wlRender(true);
+}
+
+function wlRender(loading = false) {
+  const grid = document.getElementById('wlGrid');
+  if (!state.watchlist.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:24px;">
+      <div class="empty-icon">📌</div>
+      <div class="empty-title">Liste boş</div>
+      <div class="empty-sub">Hisse ekleyin</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = state.watchlist.map(s => {
+    const code = s.replace('.IS','');
+    const fiyat = (Math.random() * 200 + 5).toFixed(2);
+    const degisim = ((Math.random() - 0.45) * 8).toFixed(2);
+    const color = parseFloat(degisim) >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = parseFloat(degisim) >= 0 ? '+' : '';
+    return `<div class="wl-card" onclick="quickAnaliz('${code}')">
+      <button class="wl-remove" onclick="event.stopPropagation();wlSil('${s}')">✕</button>
+      <div class="wl-symbol">${code}</div>
+      <div class="wl-price" style="color:${color}">₺${fiyat}</div>
+      <div class="wl-change" style="color:${color}">${sign}${degisim}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── HABER AKIŞI ───────────────────────────────────────────
+async function haberYukle() {
+  try {
+    // Şimdilik genel piyasa (BIST) haberini çekelim
+    const res = await fetch('http://127.0.0.1:8000/api/news/BIST');
+    if (!res.ok) throw new Error("Haberler çekilemedi");
+    
+    const data = await res.json();
+    state.haberler = data.haberler; // API'den gelen gerçek haberler
+    
+    // Daha önce yazdığın UI filtreleme fonksiyonunu tetikle
+    haberFiltrele('all'); 
+  } catch (error) {
+    console.error("Haber API Hatası:", error);
+    toast("Haberler güncellenemedi", true);
+  }
+}
+
+function haberFiltrele(filtre) {
+  document.querySelectorAll('[id^="hf-"]').forEach(b => {
+    b.className = 'btn btn-ghost';
+  });
+  document.getElementById('hf-' + filtre).className = 'btn btn-primary';
+
+  const list = document.getElementById('newsList');
+  const filtered = filtre === 'all' ? state.haberler : state.haberler.filter(h => h.sentiment === filtre);
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Haber bulunamadı</div></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(h => {
+    const colors = { pozitif: 'var(--green)', negatif: 'var(--red)', notr: 'var(--muted)' };
+    return `<div class="news-item">
+      <div class="news-sentiment" style="background:${colors[h.sentiment]}"></div>
+      <div class="news-body">
+        <div class="news-title">${h.baslik}</div>
+        <div class="news-meta">
+          <span>${h.kaynak}</span>
+          <span>${h.saat}</span>
+          <span class="badge ${h.sentiment === 'pozitif' ? 'badge-green' : h.sentiment === 'negatif' ? 'badge-red' : 'badge-amber'}">${h.hisse}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── CHAT ──────────────────────────────────────────────────
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    chatGonder();
+  }
+}
+
+async function chatGonder() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  chatMesajEkle('user', msg);
+  state.chatHistory.push({ role: 'user', content: msg });
+
+  const btn = document.getElementById('chatBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  // Thinking indicator
+  const thinkId = 'think-' + Date.now();
+  document.getElementById('chatMessages').innerHTML += `<div class="msg ai" id="${thinkId}">
+    <div class="msg-avatar">AI</div>
+    <div class="msg-bubble" style="color:var(--muted);">Düşünüyorum...</div>
+  </div>`;
+  scrollChat();
+
+  try{
+    const res = await fetch('http://127.0.0.1:8000/api/chat',{
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        messages: state.chatHistory, // message yerine messages (Pydantic modeline uyumlu)
+        baglam: state.aktifAnalizBaglami || "Aktif baglam yok.",
+        ollama_key: state.apiKeys.ollama // Gerçek state key'i
+      })
+    });
+    
+    if(!res.ok) throw new Error('Yapay zeka sunucusuna ulaşılamadı.');
+
+    const data = await res.json();
+    const gercekCevap = data.cevap; // Değişkeni tanımladık
+
+    document.getElementById(thinkId)?.remove();
+    chatMesajEkle('ai', gercekCevap);
+    state.chatHistory.push({ role: 'assistant', content: gercekCevap });
+    
+    if (state.chatHistory.length > 20) state.chatHistory = state.chatHistory.slice(-20);
+  
+  } catch(e) {
+    document.getElementById(thinkId)?.remove();
+    chatMesajEkle('ai', 'Bağlantı hatası: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>';
+  }
+}
+
+
+function chatMesajEkle(role, content) {
+  const msgs = document.getElementById('chatMessages');
+  const initials = role === 'user' ? (state.user?.initials || 'SZ') : 'AI';
+  msgs.innerHTML += `<div class="msg ${role}">
+    <div class="msg-avatar">${initials}</div>
+    <div class="msg-bubble">${content}</div>
+  </div>`;
+  scrollChat();
+}
+
+function scrollChat() {
+  const msgs = document.getElementById('chatMessages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── DEMO VERİ ─────────────────────────────────────────────
+function demoAnalizData(sembol) {
+  const fiyat = Math.random() * 200 + 5;
+  const sbs = Math.random() * 80 + 20;
+  const rsi = Math.random() * 60 + 20;
+  const kararlar = ['GÜÇLÜ AL ✅','AL ✅','TUT ⚠️','SAT ❌'];
+  const karar = kararlar[Math.floor(Math.random() * kararlar.length)];
+
+  return {
+    symbol: sembol + '.IS',
+    son_fiyat: fiyat,
+    degisim: (Math.random() - 0.45) * 8,
+    sbs, rsi, karar,
+    gemini: `📊 GELECEK SENARYOSU:\nTeknik göstergeler ${sembol} için orta vadeli ${sbs > 50 ? 'yükseliş' : 'konsolidasyon'} senaryosuna işaret ediyor. RSI ${rsi.toFixed(1)} seviyesinde. SBS: ${sbs.toFixed(1)}.\n\n🎯 HEDEF FİYAT:\n₺${(fiyat * 1.12).toFixed(2)}\n\n🛑 STOP SEVİYESİ:\n₺${(fiyat * 0.94).toFixed(2)}\n\n🔥 GÜVEN SKORU:\n${(Math.random()*30+50).toFixed(0)}/100 (Teknik ve temel veriler kısmen uyumlu)\n\n📌 SON KARAR:\n${karar}`,
+    ollama: `Selam, ben senin agresif trader asistanınım. ${sembol} için kısa vadeli analiz:\n\n📊 AGRESİF SENARYO:\nSBS ${sbs.toFixed(1)} ile ${sbs > 65 ? 'güçlü alım baskısı var bro, füzeye bin zamanı 🚀' : 'momentum biraz yavaş, fırsat kolluyor'}\n\n🎯 AGRESİF HEDEF:\n₺${(fiyat * 1.07).toFixed(2)} (5 gün)\n\n🛑 SERT STOP:\n₺${(fiyat * 0.97).toFixed(2)}\n\n⚡ AGRESİF KARAR:\n${karar}\n\nNeden? SBS ve hacim verisi bu yönü destekliyor.`
+  };
+}
+
+function demoChat(msg) {
+  const cevaplar = [
+    'BIST piyasası bugün yatay seyrediyor. Bankacılık sektörü %0.3 artıda. Dikkat etmeniz gereken haber: MB faiz toplantısı yarın.',
+    'Teknik analiz açısından RSI 30 altındaki hisseler aşırı satım bölgesinde. Bu hisseler kısa vadede tepki potansiyeli taşıyabilir.',
+    'SBS (Sentetik Alım-Satım Baskısı) skoru 70 üzeri olan hisseler güçlü alım momentumunda sayılır. Mega tarama ile bu hisseleri filtreleyebilirsiniz.',
+    'BIST 100 için 2024 verileri: volatilite ortalama %28. Enflasyon baskısı altında reel getiri korunması için dolar kazanan ihracatçı hisseler öne çıkıyor.',
+    'Maalesef yatırım tavsiyesi veremiyorum. Ama verileri birlikte yorumlayabiliriz — hangi hisseyi sormak istersiniz?'
+  ];
+  return cevaplar[Math.floor(Math.random() * cevaplar.length)];
+}
+
+// ─── UTILS ─────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ─── TOAST ─────────────────────────────────────────────────
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  const msgEl = document.getElementById('toastMsg');
+  msgEl.textContent = msg;
+  el.style.display = 'flex';
+  el.style.borderColor = isError ? 'rgba(239,68,68,0.3)' : 'var(--border2)';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 2800);
+}
+
+// ─── TEMA ──────────────────────────────────────────────────
+function temaDegistir(tema) {
+  if (tema === 'acik') {
+    document.body.classList.add('light');
+    document.getElementById('themeAcik').classList.add('active');
+    document.getElementById('themeKoyu').classList.remove('active');
+  } else {
+    document.body.classList.remove('light');
+    document.getElementById('themeKoyu').classList.add('active');
+    document.getElementById('themeAcik').classList.remove('active');
+  }
+  localStorage.setItem('tema', tema);
+  toast('Tema değiştirildi');
+}
+
+// ─── ŞİFRE ─────────────────────────────────────────────────
+// ─── GERÇEK ŞİFRE DEĞİŞTİRME ─────────────────────────────────────
+async function sifreDegistir() {
+  const mevcut = document.getElementById('sifreMevcut').value;
+  const yeni = document.getElementById('sifreYeni').value;
+  const tekrar = document.getElementById('sifreYeniTekrar').value;
+  const errEl = document.getElementById('sifreErr');
+  errEl.style.display = 'none';
+
+  if (!mevcut || !yeni || !tekrar) { errEl.textContent = 'Tüm alanlar zorunlu.'; errEl.style.display = 'block'; return; }
+  if (yeni.length < 8) { errEl.textContent = 'Şifre en az 8 karakter olmalı.'; errEl.style.display = 'block'; return; }
+  if (yeni !== tekrar) { errEl.textContent = 'Yeni şifreler eşleşmiyor.'; errEl.style.display = 'block'; return; }
+
+  try {
+    const res = await fetch(`${RENDER_API}/change_password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: state.user.email,
+        old_password: mevcut,
+        new_password: yeni
+      })
+    });
+
+    if (res.ok) {
+      document.getElementById('sifreMevcut').value = '';
+      document.getElementById('sifreYeni').value = '';
+      document.getElementById('sifreYeniTekrar').value = '';
+      toast('Şifre başarıyla güncellendi');
+    } else {
+      const err = await res.json();
+      errEl.textContent = err.detail || 'İşlem başarısız.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Bağlantı hatası.';
+    errEl.style.display = 'block';
+  }
+}
+
+// ─── GERÇEK API KEY YÖNETİMİ ───────────────────────────────────────
+const keyState = { geminiVisible: false, ollamaVisible: false };
+
+function keyGoster(tip) {
+  const display = document.getElementById(tip + 'KeyDisplay');
+  const visible = keyState[tip + 'Visible'];
+  display.textContent = visible ? '••••••••••••••••••••' : state.apiKeys[tip];
+  keyState[tip + 'Visible'] = !visible;
+}
+
+function keyCopy(tip) {
+  navigator.clipboard.writeText(state.apiKeys[tip]).then(() => toast('API key kopyalandı'));
+}
+
+async function keyGuncelle(tip) {
+  const val = document.getElementById('yeni' + tip.charAt(0).toUpperCase() + tip.slice(1) + 'Key').value.trim();
+  if (!val) { toast('Key boş olamaz', true); return; }
+  
+  // Önce local state'i güncelliyoruz
+  state.apiKeys[tip] = val;
+
+  try {
+    const res = await fetch(`${RENDER_API}/update_keys`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: state.user.email,
+        gemini_key: state.apiKeys.gemini,
+        ollama_key: state.apiKeys.ollama
+      })
+    });
+
+    if (res.ok) {
+      document.getElementById('yeni' + tip.charAt(0).toUpperCase() + tip.slice(1) + 'Key').value = '';
+      document.getElementById(tip + 'KeyDisplay').textContent = '••••••••••••••••••••';
+      keyState[tip + 'Visible'] = false;
+      toast(tip.charAt(0).toUpperCase() + tip.slice(1) + ' API key güncellendi');
+    } else {
+      throw new Error("Sunucu hatası");
+    }
+  } catch(e) {
+    toast('Key veritabanına kaydedilemedi', true);
+  }
+}
+
+// ─── AYAR KAYDET ───────────────────────────────────────────
+function ayarKaydet() {
+  const ayarlar = {
+    notifSignal: document.getElementById('notifSignal').checked,
+    notifHaber: document.getElementById('notifHaber').checked,
+    notifPiyasa: document.getElementById('notifPiyasa').checked,
+  };
+  localStorage.setItem('ayarlar', JSON.stringify(ayarlar));
+  toast('Ayarlar kaydedildi');
+}
+
+function ayarlariYukle() {
+  const ayarlar = JSON.parse(localStorage.getItem('ayarlar') || '{}');
+  if ('notifSignal' in ayarlar) document.getElementById('notifSignal').checked = ayarlar.notifSignal;
+  if ('notifHaber' in ayarlar) document.getElementById('notifHaber').checked = ayarlar.notifHaber;
+  if ('notifPiyasa' in ayarlar) document.getElementById('notifPiyasa').checked = ayarlar.notifPiyasa;
+  const tema = localStorage.getItem('tema') || 'koyu';
+  if (tema === 'acik') temaDegistir('acik');
+}
+
+// ─── TEHLİKE ZONU ──────────────────────────────────────────
+// ─── GERÇEK VERİ TEMİZLEME VE HESAP SİLME ─────────────────────────
+async function verileriTemizle() {
+  if (!confirm('İzleme listesi veritabanından tamamen silinecek. Emin misiniz?')) return;
+  
+  try {
+    const res = await fetch(`${RENDER_API}/clear_watchlist/${state.user.email}`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      state.watchlist = [];
+      state.chatHistory = [];
+      document.getElementById('chatMessages').innerHTML = '';
+      document.getElementById('statAnaliz').textContent = '0';
+      document.getElementById('statChat').textContent = '0';
+      wlRender(); // Arayüzdeki izleme listesini boşalt
+      toast('Tüm veriler temizlendi');
+    }
+  } catch(e) {
+    toast('İşlem başarısız oldu', true);
+  }
+}
+
+async function hesabiSil() {
+  if (!confirm('Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?')) return;
+  
+  try {
+    const res = await fetch(`${RENDER_API}/delete_account/${state.user.email}`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      toast('Hesabınız başarıyla silindi.');
+      setTimeout(() => {
+        doLogout(); // Çıkış yapıp login ekranına atar
+      }, 1500);
+    } else {
+      toast('Hesap silinemedi.', true);
+    }
+  } catch(e) {
+    toast('Bağlantı hatası.', true);
+  }
+}
+function hesabiSil() {
+  if (!confirm('Hesabınız kalıcı olarak silinecek. Emin misiniz?')) return;
+  // Gerçek projede: fetch('/api/delete-account', {method:'DELETE'})
+  toast('Bu özellik henüz aktif değil', true);
+}
+
+// ─── PROFİL GÜNCELLE ───────────────────────────────────────
+function profilGuncelle() {
+  if (!state.user) return;
+  document.getElementById('profileAvatarBig').textContent = state.user.initials;
+  document.getElementById('profileName').textContent = state.user.email.split('@')[0];
+  document.getElementById('profileEmail').textContent = state.user.email;
+  document.getElementById('statWL').textContent = state.watchlist.length;
+  document.getElementById('statChat').textContent = state.chatHistory.length;
+}
+
+// Piyasa durumu
+function updateMarketStatus() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const mins = h * 60 + m;
+  const el = document.getElementById('marketStatus');
+  // BIST 10:00-18:00 (UTC+3)
+  if (mins >= 600 && mins <= 1080) {
+    el.textContent = '● Piyasa Açık';
+    el.className = 'badge badge-green';
+  } else {
+    el.textContent = '○ Piyasa Kapalı';
+    el.className = 'badge badge-amber';
+  }
+}
+
+// ─── GERÇEK İZLEME LİSTESİ (WATCHLIST) ─────────────────────────────
+
+async function wlRender(loading = false) {
+  const grid = document.getElementById('wlGrid');
+  
+  if (!state.user || !state.user.email) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;padding:24px;">Giriş yapmalısınız.</div>';
+    return;
+  }
+
+  // 1. Render Veritabanından Kullanıcının Listesini Çek
+  try {
+    const dbRes = await fetch(`${RENDER_API}/get_watchlist/${state.user.email}`);
+    if (dbRes.ok) {
+      const data = await dbRes.json();
+      state.watchlist = data.watchlist || [];
+    }
+  } catch (e) {
+    console.error("Veritabanına bağlanılamadı", e);
+  }
+
+  if (!state.watchlist.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:24px;">
+      <div class="empty-icon">📌</div>
+      <div class="empty-title">Liste boş</div>
+      <div class="empty-sub">Hisse ekleyin</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = '<span class="spinner"></span> Fiyatlar güncelleniyor...';
+  let htmlContent = '';
+
+  // 2. Listedeki Her Hisse İçin Kendi FastAPI Sunucundan Analiz Çek
+  for (let sembol of state.watchlist) {
+    try {
+      const apiRes = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        
+        const code = data.sembol.replace('.IS','');
+        const color = data.yon.includes('YÜKSELİŞ') || data.yon.includes('AL') ? 'var(--green)' : 'var(--red)';
+        
+        htmlContent += `<div class="wl-card" onclick="quickAnaliz('${code}')">
+          <button class="wl-remove" onclick="event.stopPropagation();wlSil('${sembol}')">✕</button>
+          <div class="wl-symbol">${code}</div>
+          <div class="wl-price" style="color:${color}">₺${data.fiyat}</div>
+          <div class="wl-change" style="color:${color}">RSI: ${data.rsi} | SBS: ${data.sbs}</div>
+        </div>`;
+      }
+    } catch(e) {
+      console.warn(`${sembol} analiz edilemedi.`);
+    }
+  }
+  
+  grid.innerHTML = htmlContent;
+}
+
+// ─── LİSTEYE HİSSE EKLE ──────────────────────────────────────────
+async function wlEkle() {
+  let val = document.getElementById('wlInput').value.trim().toUpperCase();
+  if (!val || !state.user) return;
+  if (!val.endsWith('.IS')) val += '.IS';
+  
+  try {
+    const res = await fetch(`${RENDER_API}/add_watchlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: state.user.email, symbol: val })
+    });
+    
+    if (res.ok) {
+      toast(`${val} listeye eklendi`);
+      document.getElementById('wlInput').value = '';
+      wlRender(); // Arayüzü yenile
+    }
+  } catch (e) {
+    toast('Hisse eklenemedi', true);
+  }
+}
+
+// ─── LİSTEDEN HİSSE SİL ──────────────────────────────────────────
+async function wlSil(sembol) {
+  if (!state.user) return;
+  
+  try {
+    const res = await fetch(`${RENDER_API}/remove_watchlist/${state.user.email}/${sembol}`, {
+      method: 'DELETE'
+    });
+    
+    if (res.ok) {
+      toast(`${sembol} listeden çıkarıldı`);
+      wlRender(); // Arayüzü yenile
+    }
+  } catch (e) {
+    toast('Silme işlemi başarısız', true);
+  }
+}
+
+updateMarketStatus();
+setInterval(updateMarketStatus, 60000);
+</script>
+</body>
+</html>
