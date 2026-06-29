@@ -616,21 +616,54 @@
     border: 1px solid var(--border2);
     border-radius: 16px;
     padding: 32px;
-    width: 360px;
+    width: 380px;
+    max-height: 90vh;
+    overflow-y: auto;
   }
 
   .login-logo {
     font-size: 20px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 16px;
   }
 
   .login-logo span { color: var(--accent); }
 
+  .login-tabs {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+
+  .login-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .login-tab.active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+
+  .login-tab:hover:not(.active) { color: var(--text); }
+
   .login-sub {
     font-size: 13px;
     color: var(--muted);
-    margin-bottom: 24px;
+    margin-bottom: 18px;
   }
 
   .form-field {
@@ -869,22 +902,69 @@
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN / REGISTER -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <div class="login-logo">Fin<span>Sight</span> AI</div>
-    <p class="login-sub">BIST analiz platformuna giriş yapın</p>
 
-    <div class="form-field">
-      <label>E-posta</label>
-      <input type="text" id="loginEmail" placeholder="kullanici@mail.com">
+    <!-- Tab seçici -->
+    <div class="login-tabs">
+      <button class="login-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">Giriş yap</button>
+      <button class="login-tab" id="tabRegisterBtn" onclick="switchAuthTab('register')">Kayıt ol</button>
     </div>
-    <div class="form-field">
-      <label>Şifre</label>
-      <input type="password" id="loginPass" placeholder="••••••••">
+
+    <!-- GİRİŞ FORMU -->
+    <div id="loginForm">
+      <p class="login-sub">Hesabınıza giriş yapın</p>
+      <div class="form-field">
+        <label>E-posta veya kullanıcı adı</label>
+        <input type="text" id="loginEmail" placeholder="kullanici@mail.com" onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div class="form-field">
+        <label>Şifre</label>
+        <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div id="loginErr" class="error-msg"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center;" id="loginBtn" onclick="doLogin()">Giriş yap</button>
     </div>
-    <div id="loginErr" class="error-msg">E-posta veya şifre hatalı.</div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center;" onclick="doLogin()">Giriş yap</button>
+
+    <!-- KAYIT FORMU -->
+    <div id="registerForm" style="display:none;">
+      <p class="login-sub">Yeni hesap oluşturun</p>
+      <div class="form-field">
+        <label>Kullanıcı adı</label>
+        <input type="text" id="regUsername" placeholder="musab123">
+      </div>
+      <div class="form-field">
+        <label>E-posta</label>
+        <input type="text" id="regEmail" placeholder="kullanici@mail.com">
+      </div>
+      <div class="form-field">
+        <label>Şifre</label>
+        <input type="password" id="regPass" placeholder="En az 8 karakter">
+      </div>
+      <div class="form-field">
+        <label>Şifre tekrar</label>
+        <input type="password" id="regPassConfirm" placeholder="••••••••">
+      </div>
+
+      <!-- API keyleri opsiyonel — sonradan da eklenebilir -->
+      <div style="margin:12px 0 8px;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;">
+        API Anahtarları <span style="font-weight:400;text-transform:none;">(opsiyonel, sonradan da ekleyebilirsiniz)</span>
+      </div>
+      <div class="form-field">
+        <label>Gemini API Key</label>
+        <input type="text" id="regGeminiKey" placeholder="AIza...">
+      </div>
+      <div class="form-field">
+        <label>Ollama API Key</label>
+        <input type="text" id="regOllamaKey" placeholder="sk-...">
+      </div>
+
+      <div id="registerErr" class="error-msg"></div>
+      <div id="registerOk" style="font-size:12px;color:var(--green);margin-top:8px;display:none;"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center;" id="registerBtn" onclick="doRegister()">Hesap oluştur</button>
+    </div>
   </div>
 </div>
 
@@ -1323,71 +1403,162 @@ const state = {
 
 const RENDER_API = "https://finsight-ai-backend-u1cw.onrender.com";
 
+// ─── AUTH TAB GEÇİŞİ ──────────────────────────────────────
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('loginForm').style.display    = isLogin ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('tabLoginBtn').classList.toggle('active', isLogin);
+  document.getElementById('tabRegisterBtn').classList.toggle('active', !isLogin);
+  // Hata mesajlarını temizle
+  document.getElementById('loginErr').style.display    = 'none';
+  document.getElementById('registerErr').style.display = 'none';
+  document.getElementById('registerOk').style.display  = 'none';
+}
+
 // ─── LOGIN ─────────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  if (!email || !pass) { showErr('E-posta ve şifre gerekli.'); return; }
-  // Demo: herhangi bir giriş kabul edilir, gerçek projede API çağrısı yapılacak
-const btn = document.querySelector('.login-box .btn-primary');
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showErr('loginErr', 'E-posta ve şifre gerekli.'); return; }
+
+  const btn = document.getElementById('loginBtn');
   btn.innerHTML = '<span class="spinner"></span> Giriş yapılıyor...';
-  btn.disabled = true;
+  btn.disabled  = true;
 
   try {
-    // Render API'sine login isteği atıyoruz
     const res = await fetch(`${RENDER_API}/login`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kullanici_bilgisi: email, password: pass })
+      body:    JSON.stringify({ kullanici_bilgisi: email, password: pass })
     });
 
     if (res.ok) {
       const data = await res.json();
-      state.user = { 
-        email: data.email, 
-        username: data.username, 
-        initials: data.username.substring(0,2).toUpperCase() 
+      state.user = {
+        email:    data.email,
+        username: data.username,
+        password: pass,   // get_keys gibi şifre gerektiren çağrılar için bellekte tutyoruz
+        initials: data.username.substring(0, 2).toUpperCase()
       };
-      
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('userAvatar').textContent = state.user.initials;
-      document.getElementById('userName').textContent = state.user.username;
 
-      // Kullanıcının API Key'lerini Render'dan çekiyoruz
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('userAvatar').textContent     = state.user.initials;
+      document.getElementById('userName').textContent       = state.user.username;
+
+      // API key'lerini çek — artık POST ve şifre gerekiyor
       try {
-        const keyRes = await fetch(`${RENDER_API}/get_keys/${data.email}`);
-        if(keyRes.ok) {
-            const keys = await keyRes.json();
-            state.apiKeys.gemini = keys.gemini_key || '';
-            state.apiKeys.ollama = keys.ollama_key || '';
+        const keyRes = await fetch(`${RENDER_API}/get_keys`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email: data.email, password: pass })
+        });
+        if (keyRes.ok) {
+          const keys = await keyRes.json();
+          state.apiKeys.gemini = keys.gemini_key || '';
+          state.apiKeys.ollama = keys.ollama_key || '';
         }
-      } catch(e) { console.warn("Keyler çekilemedi."); }
+      } catch(e) { console.warn('Keyler çekilemedi.'); }
 
       haberYukle();
       profilGuncelle();
-      wlRender(); // Watchlist'i getir
+      wlRender();
     } else {
-      showErr('E-posta veya şifre hatalı.');
+      showErr('loginErr', 'E-posta veya şifre hatalı.');
     }
   } catch(e) {
-    showErr('Sunucuya bağlanılamadı.');
+    showErr('loginErr', 'Sunucuya bağlanılamadı.');
   } finally {
     btn.innerHTML = 'Giriş yap';
-    btn.disabled = false;
+    btn.disabled  = false;
   }
 }
 
-function showErr(msg) {
-  const el = document.getElementById('loginErr');
-  el.textContent = msg;
-  el.style.display = 'block';
+// ─── KAYIT ─────────────────────────────────────────────────
+async function doRegister() {
+  const username     = document.getElementById('regUsername').value.trim();
+  const email        = document.getElementById('regEmail').value.trim();
+  const pass         = document.getElementById('regPass').value;
+  const passConfirm  = document.getElementById('regPassConfirm').value;
+  const geminiKey    = document.getElementById('regGeminiKey').value.trim();
+  const ollamaKey    = document.getElementById('regOllamaKey').value.trim();
+
+  document.getElementById('registerErr').style.display = 'none';
+  document.getElementById('registerOk').style.display  = 'none';
+
+  // Validasyon
+  if (!username || !email || !pass || !passConfirm) {
+    showErr('registerErr', 'Kullanıcı adı, e-posta ve şifre zorunlu.'); return;
+  }
+  if (pass.length < 8) {
+    showErr('registerErr', 'Şifre en az 8 karakter olmalı.'); return;
+  }
+  if (pass !== passConfirm) {
+    showErr('registerErr', 'Şifreler eşleşmiyor.'); return;
+  }
+  if (!email.includes('@')) {
+    showErr('registerErr', 'Geçerli bir e-posta girin.'); return;
+  }
+
+  const btn = document.getElementById('registerBtn');
+  btn.innerHTML = '<span class="spinner"></span> Kaydediliyor...';
+  btn.disabled  = true;
+
+  try {
+    const res = await fetch(`${RENDER_API}/register`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        username,
+        email,
+        password:   pass,
+        gemini_key: geminiKey,
+        ollama_key: ollamaKey
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Başarı mesajı göster, 1.5 sn sonra login tabına geç
+      const okEl = document.getElementById('registerOk');
+      okEl.textContent = '✓ Hesabınız oluşturuldu. Giriş yapabilirsiniz.';
+      okEl.style.display = 'block';
+
+      // Formu temizle
+      ['regUsername','regEmail','regPass','regPassConfirm','regGeminiKey','regOllamaKey']
+        .forEach(id => document.getElementById(id).value = '');
+
+      setTimeout(() => {
+        switchAuthTab('login');
+        // Email'i giriş formuna taşı
+        document.getElementById('loginEmail').value = email;
+      }, 1500);
+    } else {
+      showErr('registerErr', data.detail || 'Kayıt başarısız.');
+    }
+  } catch(e) {
+    showErr('registerErr', 'Sunucuya bağlanılamadı.');
+  } finally {
+    btn.innerHTML = 'Hesap oluştur';
+    btn.disabled  = false;
+  }
+}
+
+function showErr(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent    = msg;
+  el.style.display  = 'block';
 }
 
 function doLogout() {
-  state.user = null;
+  state.user     = null;
+  state.apiKeys  = { gemini: '', ollama: '' };
+  state.watchlist = [];
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPass').value = '';
+  document.getElementById('loginPass').value  = '';
+  switchAuthTab('login');
 }
 
 // ─── NAVİGASYON ────────────────────────────────────────────
@@ -1907,16 +2078,17 @@ function keyCopy(tip) {
 async function keyGuncelle(tip) {
   const val = document.getElementById('yeni' + tip.charAt(0).toUpperCase() + tip.slice(1) + 'Key').value.trim();
   if (!val) { toast('Key boş olamaz', true); return; }
-  
-  // Önce local state'i güncelliyoruz
+  if (!state.user) { toast('Oturum açık değil', true); return; }
+
   state.apiKeys[tip] = val;
 
   try {
     const res = await fetch(`${RENDER_API}/update_keys`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: state.user.email,
+      body:    JSON.stringify({
+        email:      state.user.email,
+        password:   state.user.password,   // ← yeni: şifre zorunlu
         gemini_key: state.apiKeys.gemini,
         ollama_key: state.apiKeys.ollama
       })
@@ -1928,7 +2100,7 @@ async function keyGuncelle(tip) {
       keyState[tip + 'Visible'] = false;
       toast(tip.charAt(0).toUpperCase() + tip.slice(1) + ' API key güncellendi');
     } else {
-      throw new Error("Sunucu hatası");
+      throw new Error('Sunucu hatası');
     }
   } catch(e) {
     toast('Key veritabanına kaydedilemedi', true);
@@ -1959,10 +2131,13 @@ function ayarlariYukle() {
 // ─── GERÇEK VERİ TEMİZLEME VE HESAP SİLME ─────────────────────────
 async function verileriTemizle() {
   if (!confirm('İzleme listesi veritabanından tamamen silinecek. Emin misiniz?')) return;
-  
+  if (!state.user) return;
+
   try {
-    const res = await fetch(`${RENDER_API}/clear_watchlist/${state.user.email}`, {
-      method: 'DELETE'
+    const res = await fetch(`${RENDER_API}/clear_watchlist`, {
+      method:  'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email: state.user.email, password: state.user.password })
     });
 
     if (res.ok) {
@@ -1971,38 +2146,36 @@ async function verileriTemizle() {
       document.getElementById('chatMessages').innerHTML = '';
       document.getElementById('statAnaliz').textContent = '0';
       document.getElementById('statChat').textContent = '0';
-      wlRender(); // Arayüzdeki izleme listesini boşalt
+      wlRender();
       toast('Tüm veriler temizlendi');
+    } else {
+      toast('İşlem başarısız oldu', true);
     }
   } catch(e) {
-    toast('İşlem başarısız oldu', true);
+    toast('Bağlantı hatası', true);
   }
 }
 
 async function hesabiSil() {
   if (!confirm('Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?')) return;
-  
+  if (!state.user) return;
+
   try {
-    const res = await fetch(`${RENDER_API}/delete_account/${state.user.email}`, {
-      method: 'DELETE'
+    const res = await fetch(`${RENDER_API}/delete_account`, {
+      method:  'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email: state.user.email, password: state.user.password })
     });
 
     if (res.ok) {
       toast('Hesabınız başarıyla silindi.');
-      setTimeout(() => {
-        doLogout(); // Çıkış yapıp login ekranına atar
-      }, 1500);
+      setTimeout(() => { doLogout(); }, 1500);
     } else {
       toast('Hesap silinemedi.', true);
     }
   } catch(e) {
     toast('Bağlantı hatası.', true);
   }
-}
-function hesabiSil() {
-  if (!confirm('Hesabınız kalıcı olarak silinecek. Emin misiniz?')) return;
-  // Gerçek projede: fetch('/api/delete-account', {method:'DELETE'})
-  toast('Bu özellik henüz aktif değil', true);
 }
 
 // ─── PROFİL GÜNCELLE ───────────────────────────────────────
