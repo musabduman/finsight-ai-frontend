@@ -1466,9 +1466,10 @@ async function doLogin() {
     } else {
       showErr('loginErr', 'E-posta veya şifre hatalı.');
     }
-  } catch(e) {
-    showErr('loginErr', 'Sunucuya bağlanılamadı.');
-  } finally {
+  } catch (e) {
+  console.error("Login hatası:", e);
+  showErr('loginErr', 'Sunucuya bağlanılamadı: ' + e.message);
+  }finally {
     btn.innerHTML = 'Giriş yap';
     btn.disabled  = false;
   }
