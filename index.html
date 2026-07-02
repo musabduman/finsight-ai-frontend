@@ -1595,7 +1595,7 @@ async function analizEt() {
 
   try {
     // FastAPI'ye POST isteği atıyoruz
-    const res = await fetch('http://127.0.0.1:8000/api/analyze', {
+    const res = await fetch(`${RENDER_API}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1679,7 +1679,7 @@ async function bist30Tara() {
 
   for (let sembol of bist30) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      const res = await fetch(`${RENDER_API}/api/analyze`);
       if (res.ok) {
         const data = await res.json();
         
@@ -1743,7 +1743,7 @@ async function megaTara() {
 
     try {
       // FastAPI Quick-Scan endpoint'ine istek at
-      const res = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      const res = await fetch(`${RENDER_API}/api/analyze`)
       if (res.ok) {
         const data = await res.json();
         
@@ -1844,7 +1844,7 @@ function wlRender(loading = false) {
 async function haberYukle() {
   try {
     // Şimdilik genel piyasa (BIST) haberini çekelim
-    const res = await fetch('http://127.0.0.1:8000/api/news/BIST');
+    const res = await fetch(`${RENDER_API}/api/news/BIST`);
     if (!res.ok) throw new Error("Haberler çekilemedi");
     
     const data = await res.json();
@@ -1918,7 +1918,7 @@ async function chatGonder() {
   scrollChat();
 
   try{
-    const res = await fetch('http://127.0.0.1:8000/api/chat',{
+    const res = await fetch(`${RENDER_API}/api/chat`,{
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -2241,7 +2241,7 @@ async function wlRender(loading = false) {
   // 2. Listedeki Her Hisse İçin Kendi FastAPI Sunucundan Analiz Çek
   for (let sembol of state.watchlist) {
     try {
-      const apiRes = await fetch(`http://127.0.0.1:8000/api/quick-scan/${sembol}`);
+      const apiRes = await fetch(`${RENDER_API}/api/analyze`)
       if (apiRes.ok) {
         const data = await apiRes.json();
         
